@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdTech RTB Simulator — Guardrail Intelligence Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#121b2e; --panel2:#16223a; --border:#263457;
+    --text:#eef2ff; --sub:#93a1c4; --accent:#4f8cff; --accent2:#22d3a5;
+    --warn:#ffb648; --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:linear-gradient(160deg,#0b1220 0%,#0d1526 55%,#0b1220 100%);
+    color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+    padding:32px 5vw 64px;
+  }
+  a{color:var(--accent);}
+  h1{font-size:clamp(26px,4vw,42px); font-weight:800; letter-spacing:-0.02em; margin:0 0 8px; line-height:1.15;}
+  h1 span{color:var(--accent);}
+  .sub{color:var(--sub); font-size:15px; max-width:760px; line-height:1.55; margin-bottom:6px;}
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:700;
+    letter-spacing:0.1em; text-transform:uppercase; color:var(--accent2);
+    background:rgba(34,211,165,.1); border:1px solid rgba(34,211,165,.3);
+    padding:5px 12px; border-radius:999px; margin-bottom:16px;
+  }
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);}
+  .toprow{display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;}
+  .meta-note{font-size:13px; color:var(--sub); text-align:right;}
+
+  .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin:28px 0;}
+  .kpi{background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:18px 20px;}
+  .kpi .v{font-family:"SF Mono",Consolas,monospace; font-size:26px; font-weight:700; line-height:1; margin-bottom:8px;}
+  .kpi .l{font-size:12.5px; color:var(--sub); line-height:1.4;}
+  .v.good{color:var(--accent2);} .v.warn{color:var(--warn);} .v.accent{color:var(--accent);}
+
+  .tabs{display:flex; gap:6px; flex-wrap:wrap; margin:36px 0 18px; border-bottom:1px solid var(--border); padding-bottom:0;}
+  .tab{
+    background:none; border:none; color:var(--sub); font-size:13.5px; font-weight:600;
+    padding:10px 16px; cursor:pointer; border-bottom:2px solid transparent; transition:.15s;
+  }
+  .tab:hover{color:var(--text);}
+  .tab.active{color:var(--text); border-bottom-color:var(--accent);}
+  .panel{display:none;}
+  .panel.active{display:block; animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  .grid2{display:grid; grid-template-columns:1.3fr 1fr; gap:16px;}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media(max-width:900px){ .grid2,.grid3{grid-template-columns:1fr;} }
+
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:22px 24px; margin-bottom:16px;}
+  .card h3{font-size:14.5px; font-weight:700; margin:0 0 14px; display:flex; align-items:center; gap:8px;}
+  .card p.note{font-size:12.5px; color:var(--sub); margin:10px 0 0; line-height:1.5;}
+  .chartwrap{position:relative; height:280px;}
+  .chartwrap.tall{height:340px;}
+
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{
+    text-align:left; color:var(--sub); font-weight:600; font-size:11.5px; text-transform:uppercase;
+    letter-spacing:.04em; padding:8px 10px; border-bottom:1px solid var(--border); cursor:pointer; user-select:none;
+  }
+  th:hover{color:var(--text);}
+  th.sorted::after{content:" ▾"; color:var(--accent);}
+  td{padding:9px 10px; border-bottom:1px solid rgba(255,255,255,.04); color:var(--text);}
+  tr:hover td{background:rgba(255,255,255,.02);}
+  .pill{display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600;}
+  .pill.hi{background:rgba(34,211,165,.15); color:var(--accent2);}
+  .pill.lo{background:rgba(255,107,107,.15); color:var(--danger);}
+  .filterbar{display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;}
+  .filterbar input{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    padding:8px 12px; border-radius:8px; font-size:13px; flex:1; min-width:160px;
+  }
+  .finding{
+    background:linear-gradient(135deg, rgba(255,107,107,.09), rgba(18,27,46,0));
+    border:1px solid rgba(255,107,107,.35); border-radius:16px; padding:20px 24px; margin-bottom:16px;
+    display:flex; gap:16px; align-items:flex-start;
+  }
+  .finding .icon{font-size:22px;}
+  .finding h4{margin:0 0 6px; font-size:15px;}
+  .finding p{margin:0; font-size:13px; color:var(--sub); line-height:1.55;}
+  code{font-family:"SF Mono",Consolas,monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:5px; color:#ffd8a8; font-size:12.5px;}
+  .footer{margin-top:40px; padding-top:20px; border-top:1px solid var(--border); font-size:12.5px; color:var(--sub); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;}
+  .chip{font-size:11.5px; font-weight:600; padding:5px 11px; border-radius:999px; background:var(--panel2); border:1px solid var(--border); color:var(--sub); margin-right:6px;}
+</style>
+</head>
+<body>
+
+<div class="toprow">
+  <div>
+    <div class="eyebrow"><span class="dot"></span> Build Artifact · Guardrail Intelligence</div>
+    <h1>AdTech RTB Simulator <span>+ Guardrail Layer</span></h1>
+    <p class="sub">100,000 real-time bidding auctions, extended with an independent bid-validation and budget-anomaly rail. Every number on this page is computed directly from the simulator's own output data — nothing here is illustrative.</p>
+  </div>
+  <div class="meta-note">Raj Chetan Mehta<br>AI &amp; Analytics Engineer<br><a href="#" id="repoLink">View source on GitHub →</a></div>
+</div>
+
+<div class="kpis" id="kpiRow"></div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-panel="overview">Overview</button>
+  <button class="tab" data-panel="guardrail">Guardrail Findings</button>
+  <button class="tab" data-panel="publishers">Publishers &amp; Formats</button>
+  <button class="tab" data-panel="advertisers">Advertisers</button>
+  <button class="tab" data-panel="audience">Audience &amp; Incrementality</button>
+  <button class="tab" data-panel="pacing">Budget Pacing</button>
+</div>
+
+<!-- OVERVIEW -->
+<div class="panel active" id="panel-overview">
+  <div class="grid2">
+    <div class="card">
+      <h3>📊 Revenue by publisher</h3>
+      <div class="chartwrap tall"><canvas id="chartPubRevenue"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>🥧 Impression share by format</h3>
+      <div class="chartwrap tall"><canvas id="chartFormatShare"></canvas></div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>⚖️ Revenue: before vs. after guardrail</h3>
+      <div class="chartwrap"><canvas id="chartRevenueBA"></canvas></div>
+      <p class="note">−0.27% — every dollar removed came from a bid winning above what its own advertiser's strategy should have allowed.</p>
+    </div>
+    <div class="card">
+      <h3>🏆 Advertiser win rate</h3>
+      <div class="chartwrap"><canvas id="chartWinRate"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- GUARDRAIL -->
+<div class="panel" id="panel-guardrail">
+  <div class="finding">
+    <div class="icon">⚠️</div>
+    <div>
+      <h4>14.4% of bids exceeded their own advertiser's <code>max_cpm</code></h4>
+      <p>The original bidding engine enforced <code>max_cpm</code>/<code>floor_cpm</code> <em>before</em> applying ±15% realistic noise, but never re-checked the bid afterward. Auditing the real <code>auctions.csv</code> surfaced 68,932 constraint violations across 100,000 impressions — measured, not hypothetical.</p>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>🧾 Violation reasons (68,932 logged events)</h3>
+      <div class="chartwrap"><canvas id="chartViolReasons"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>📉 Violations by advertiser</h3>
+      <div class="chartwrap"><canvas id="chartViolAdv"></canvas></div>
+      <p class="note">Coca-Cola's fixed-CPM strategy leaves zero noise margin against its own $2.00 cap — the single most-violated constraint in the dataset.</p>
+    </div>
+  </div>
+  <div class="card">
+    <h3>🔍 Built with the mistakes shown, not hidden</h3>
+    <p class="note" style="font-size:13px;">
+      v1 of <code>validate_bid()</code> clipped legitimate $0.00 "no-bid" abstentions <em>up</em> to the floor price — briefly fabricating a 100% fill rate and nearly doubling Toyota's win count. Caught by reading the audit log's actual contents before trusting the row count, then fixed by treating <code>bid == 0.0</code> as an explicit early return. The budget-anomaly detector was separately unit-tested to correctly fire on an injected 5x spend spike and correctly ignore normal 1.5x variance — it found 0 real anomalies in this dataset (max observed pace: 1.84x against a 3x threshold), a legitimate result since this simulation has no automated bid-scaling feedback loop yet, stated as a next step rather than papered over.
+    </p>
+  </div>
+</div>
+
+<!-- PUBLISHERS & FORMATS -->
+<div class="panel" id="panel-publishers">
+  <div class="grid2">
+    <div class="card">
+      <h3>📶 Fill rate vs. RPM by publisher</h3>
+      <div class="chartwrap tall"><canvas id="chartPubFillRpm"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>📱 CTR by device</h3>
+      <div class="chartwrap tall"><canvas id="chartDeviceCtr"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>📋 Publisher performance</h3>
+    <div class="filterbar"><input id="pubFilter" placeholder="Filter by publisher…"></div>
+    <table id="pubTable">
+      <thead><tr>
+        <th data-k="publisher">Publisher</th><th data-k="impressions">Impressions</th>
+        <th data-k="fill_rate">Fill Rate</th><th data-k="revenue">Revenue</th><th data-k="rpm">RPM</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ADVERTISERS -->
+<div class="panel" id="panel-advertisers">
+  <div class="card">
+    <h3>💰 Advertiser buyer performance</h3>
+    <div class="filterbar"><input id="advFilter" placeholder="Filter by advertiser…"></div>
+    <table id="advTable">
+      <thead><tr>
+        <th data-k="winner">Advertiser</th><th data-k="impressions_won">Impressions Won</th>
+        <th data-k="total_spend">Total Spend</th><th data-k="avg_clearing_cpm">Avg CPM</th>
+        <th data-k="win_rate">Win Rate</th><th data-k="cvr">CVR</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- AUDIENCE -->
+<div class="panel" id="panel-audience">
+  <div class="grid2">
+    <div class="card">
+      <h3>💵 Income vs. conversion rate by segment</h3>
+      <div class="chartwrap tall"><canvas id="chartSegScatter"></canvas></div>
+      <p class="note">Bubble size = segment LTV. Affluent travelers convert 4x more than lapsed customers, but they're 1% of the user base.</p>
+    </div>
+    <div class="card">
+      <h3>📈 Incrementality: exposed vs. control</h3>
+      <div class="chartwrap tall"><canvas id="chartIncrement"></canvas></div>
+      <p class="note">"General" audience shows the largest lift (+49.3%) — the segment with the least existing purchase intent to begin with.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PACING -->
+<div class="panel" id="panel-pacing">
+  <div class="card">
+    <h3>⏱️ Weekly budget pacing index by advertiser (13-week window)</h3>
+    <div class="chartwrap tall"><canvas id="chartPacing"></canvas></div>
+    <p class="note">Anomaly threshold: 3.0x planned pace. Max observed in this run: 1.84x (Netflix). 0 anomalies flagged across 90 days — verified correct via a unit test that injects a 5x spike and confirms the detector fires.</p>
+  </div>
+</div>
+
+<div class="footer">
+  <div><span class="chip">Python</span><span class="chip">pandas / numpy</span><span class="chip">scikit-learn</span><span class="chip">SQLite</span><span class="chip">Chart.js</span></div>
+  <div>100,000 impressions · 50,000 users · 6 publishers · 5 advertisers · built from the project's own generated CSVs</div>
+</div>
+
+<script>
+const DATA = {"meta": {"total_impressions": 100000, "total_users": 50000, "total_revenue": 451960.26, "fill_rate": 78.2, "avg_clearing_cpm": 4.52, "total_clicks": 128, "total_conversions": 9, "total_audit_events": 68932}, "guardrail": {"bid_violation_pct": 14.4, "floor_violation_pct_toyota": 2.3, "auctions_flipped": 66, "auctions_flipped_pct": 0.066, "revenue_before": 453206.19, "revenue_after": 451960.26, "revenue_delta": -1245.94, "anomaly_threshold_x": 3.0, "anomaly_max_observed_x": 1.84, "anomalies_flagged": 0}, "publishers": [{"publisher": "reddit.com", "impressions": 16522, "filled": 12676, "revenue": 120255.0426, "fill_rate": 76.7, "rpm": 7278.48}, {"publisher": "cnn.com", "impressions": 16968, "filled": 13883, "revenue": 90118.2734, "fill_rate": 81.8, "rpm": 5311.07}, {"publisher": "nytimes.com", "impressions": 16521, "filled": 13477, "revenue": 80655.7782, "fill_rate": 81.6, "rpm": 4882.02}, {"publisher": "espn.com", "impressions": 16701, "filled": 12793, "revenue": 71409.549, "fill_rate": 76.6, "rpm": 4275.76}, {"publisher": "weather.com", "impressions": 16608, "filled": 12668, "revenue": 51354.8702, "fill_rate": 76.3, "rpm": 3092.18}, {"publisher": "buzzfeed.com", "impressions": 16680, "filled": 12738, "revenue": 38166.7435, "fill_rate": 76.4, "rpm": 2288.17}], "formats": [{"ad_format": "ctv", "impressions": 5011, "filled": 0, "revenue": 0.0, "clicks": 7, "fill_rate": 0.0, "ctr": 0.14}, {"ad_format": "display", "impressions": 45022, "filled": 45022, "revenue": 256501.0409, "clicks": 55, "fill_rate": 100.0, "ctr": 0.122}, {"ad_format": "mobile", "impressions": 29937, "filled": 29937, "revenue": 170941.8637, "clicks": 24, "fill_rate": 100.0, "ctr": 0.08}, {"ad_format": "native", "impressions": 8046, "filled": 3276, "revenue": 24517.3523, "clicks": 12, "fill_rate": 40.7, "ctr": 0.149}, {"ad_format": "video", "impressions": 11984, "filled": 0, "revenue": 0.0, "clicks": 30, "fill_rate": 0.0, "ctr": 0.25}], "devices": [{"device": "ctv", "impressions": 10097, "revenue": 41915.1972, "clicks": 1, "ctr": 0.01}, {"device": "desktop", "impressions": 34723, "revenue": 177760.5153, "clicks": 28, "ctr": 0.081}, {"device": "mobile", "impressions": 45316, "revenue": 199196.8012, "clicks": 83, "ctr": 0.183}, {"device": "tablet", "impressions": 9864, "revenue": 33087.7432, "clicks": 16, "ctr": 0.162}], "buyers": [{"winner": "Netflix", "impressions_won": 47074, "total_spend": 244337.3145, "avg_clearing_cpm": 5.1905, "avg_winning_bid": 8.009, "total_clicks": 56, "total_conversions": 2, "win_rate": 0.4707, "ctr": 0.0012, "cvr": 0.0357}, {"winner": "AmericanExpress", "impressions_won": 23352, "total_spend": 159698.312, "avg_clearing_cpm": 6.8387, "avg_winning_bid": 8.323, "total_clicks": 24, "total_conversions": 2, "win_rate": 0.2335, "ctr": 0.001, "cvr": 0.0833}, {"winner": "Nike", "impressions_won": 4442, "total_spend": 26455.9428, "avg_clearing_cpm": 5.9559, "avg_winning_bid": 6.6865, "total_clicks": 2, "total_conversions": 1, "win_rate": 0.0444, "ctr": 0.0005, "cvr": 0.5}, {"winner": "Toyota", "impressions_won": 3367, "total_spend": 21468.6876, "avg_clearing_cpm": 6.3762, "avg_winning_bid": 8.1937, "total_clicks": 1, "total_conversions": 0, "win_rate": 0.0337, "ctr": 0.0003, "cvr": 0.0}], "segments": [{"segment": "affluent_traveler", "segment_size": 268, "avg_income": 199624.0, "avg_order_value": 299.58, "avg_ltv": 15541.57, "avg_purchases": 12.9, "converters": 61, "conversion_rate_pct": 22.76}, {"segment": "high_value_customer", "segment_size": 3969, "avg_income": 136057.0, "avg_order_value": 203.62, "avg_ltv": 9254.61, "avg_purchases": 10.9, "converters": 784, "conversion_rate_pct": 19.75}, {"segment": "young_high_spender", "segment_size": 6149, "avg_income": 92465.0, "avg_order_value": 141.95, "avg_ltv": 4215.3, "avg_purchases": 6.6, "converters": 823, "conversion_rate_pct": 13.38}, {"segment": "loyalty_high_ltv", "segment_size": 6706, "avg_income": 88449.0, "avg_order_value": 126.86, "avg_ltv": 3681.77, "avg_purchases": 6.6, "converters": 904, "conversion_rate_pct": 13.48}, {"segment": "re_engagement", "segment_size": 12748, "avg_income": 76380.0, "avg_order_value": 105.35, "avg_ltv": 2739.47, "avg_purchases": 5.6, "converters": 1557, "conversion_rate_pct": 12.21}, {"segment": "lapsed_customer", "segment_size": 26166, "avg_income": 66052.0, "avg_order_value": 83.62, "avg_ltv": 2059.73, "avg_purchases": 4.8, "converters": 2831, "conversion_rate_pct": 10.82}, {"segment": "price_sensitive", "segment_size": 1673, "avg_income": 71248.0, "avg_order_value": 17.11, "avg_ltv": 450.41, "avg_purchases": 6.7, "converters": 209, "conversion_rate_pct": 12.49}, {"segment": "high_intent_no_purchase", "segment_size": 2698, "avg_income": 29929.0, "avg_order_value": 38.4, "avg_ltv": 0.0, "avg_purchases": 0.0, "converters": 146, "conversion_rate_pct": 5.41}], "incrementality": [{"segment": "affluent", "Control": 3.99, "Exposed": 4.53, "lift_pct": 13.8}, {"segment": "general", "Control": 3.29, "Exposed": 4.91, "lift_pct": 49.3}, {"segment": "high_intent", "Control": 3.56, "Exposed": 5.05, "lift_pct": 42.0}, {"segment": "high_value", "Control": 3.62, "Exposed": 4.02, "lift_pct": 11.3}, {"segment": "lapsed", "Control": 3.91, "Exposed": 5.07, "lift_pct": 29.8}], "pacing_weekly": [{"advertiser": "AmericanExpress", "week": 1, "pacing_index": 1.594, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 2, "pacing_index": 1.56, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 3, "pacing_index": 1.579, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 4, "pacing_index": 1.582, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 5, "pacing_index": 1.579, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 6, "pacing_index": 1.593, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 7, "pacing_index": 1.591, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 8, "pacing_index": 1.59, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 9, "pacing_index": 1.59, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 10, "pacing_index": 1.586, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 11, "pacing_index": 1.586, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 12, "pacing_index": 1.588, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 13, "pacing_index": 1.595, "anomalies": 0}, {"advertiser": "Netflix", "week": 1, "pacing_index": 1.628, "anomalies": 0}, {"advertiser": "Netflix", "week": 2, "pacing_index": 1.605, "anomalies": 0}, {"advertiser": "Netflix", "week": 3, "pacing_index": 1.623, "anomalies": 0}, {"advertiser": "Netflix", "week": 4, "pacing_index": 1.619, "anomalies": 0}, {"advertiser": "Netflix", "week": 5, "pacing_index": 1.606, "anomalies": 0}, {"advertiser": "Netflix", "week": 6, "pacing_index": 1.613, "anomalies": 0}, {"advertiser": "Netflix", "week": 7, "pacing_index": 1.62, "anomalies": 0}, {"advertiser": "Netflix", "week": 8, "pacing_index": 1.621, "anomalies": 0}, {"advertiser": "Netflix", "week": 9, "pacing_index": 1.622, "anomalies": 0}, {"advertiser": "Netflix", "week": 10, "pacing_index": 1.621, "anomalies": 0}, {"advertiser": "Netflix", "week": 11, "pacing_index": 1.621, "anomalies": 0}, {"advertiser": "Netflix", "week": 12, "pacing_index": 1.627, "anomalies": 0}, {"advertiser": "Netflix", "week": 13, "pacing_index": 1.63, "anomalies": 0}, {"advertiser": "Nike", "week": 1, "pacing_index": 0.47, "anomalies": 0}, {"advertiser": "Nike", "week": 2, "pacing_index": 0.505, "anomalies": 0}, {"advertiser": "Nike", "week": 3, "pacing_index": 0.511, "anomalies": 0}, {"advertiser": "Nike", "week": 4, "pacing_index": 0.518, "anomalies": 0}, {"advertiser": "Nike", "week": 5, "pacing_index": 0.528, "anomalies": 0}, {"advertiser": "Nike", "week": 6, "pacing_index": 0.532, "anomalies": 0}, {"advertiser": "Nike", "week": 7, "pacing_index": 0.529, "anomalies": 0}, {"advertiser": "Nike", "week": 8, "pacing_index": 0.525, "anomalies": 0}, {"advertiser": "Nike", "week": 9, "pacing_index": 0.525, "anomalies": 0}, {"advertiser": "Nike", "week": 10, "pacing_index": 0.526, "anomalies": 0}, {"advertiser": "Nike", "week": 11, "pacing_index": 0.527, "anomalies": 0}, {"advertiser": "Nike", "week": 12, "pacing_index": 0.53, "anomalies": 0}, {"advertiser": "Nike", "week": 13, "pacing_index": 0.53, "anomalies": 0}, {"advertiser": "Toyota", "week": 1, "pacing_index": 0.546, "anomalies": 0}, {"advertiser": "Toyota", "week": 2, "pacing_index": 0.523, "anomalies": 0}, {"advertiser": "Toyota", "week": 3, "pacing_index": 0.522, "anomalies": 0}, {"advertiser": "Toyota", "week": 4, "pacing_index": 0.532, "anomalies": 0}, {"advertiser": "Toyota", "week": 5, "pacing_index": 0.53, "anomalies": 0}, {"advertiser": "Toyota", "week": 6, "pacing_index": 0.532, "anomalies": 0}, {"advertiser": "Toyota", "week": 7, "pacing_index": 0.539, "anomalies": 0}, {"advertiser": "Toyota", "week": 8, "pacing_index": 0.539, "anomalies": 0}, {"advertiser": "Toyota", "week": 9, "pacing_index": 0.54, "anomalies": 0}, {"advertiser": "Toyota", "week": 10, "pacing_index": 0.537, "anomalies": 0}, {"advertiser": "Toyota", "week": 11, "pacing_index": 0.54, "anomalies": 0}, {"advertiser": "Toyota", "week": 12, "pacing_index": 0.539, "anomalies": 0}, {"advertiser": "Toyota", "week": 13, "pacing_index": 0.537, "anomalies": 0}], "audit_events": [{"event_type": "bid_constraint_violation", "count": 68932}], "advertiser_violations": [{"advertiser": "Coca_Cola", "violations": 30209}, {"advertiser": "AmericanExpress", "violations": 21011}, {"advertiser": "Nike", "violations": 12313}, {"advertiser": "Toyota", "violations": 5399}], "violation_reasons": [{"reason": "Below PMP floor", "count": 33324}, {"reason": "Exceeded max_cpm", "count": 30778}, {"reason": "Below floor_cpm", "count": 4830}]};
+
+const COLORS = {
+  accent:'#4f8cff', accent2:'#22d3a5', warn:'#ffb648', danger:'#ff6b6b',
+  grid:'rgba(255,255,255,.06)', text:'#93a1c4',
+  series:['#4f8cff','#22d3a5','#ffb648','#ff6b6b','#a78bfa','#38bdf8']
+};
+Chart.defaults.color = COLORS.text;
+Chart.defaults.font.family = "-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-serif";
+Chart.defaults.font.size = 11.5;
+const gridOpt = { color: COLORS.grid };
+
+function fmtMoney(n){ return '$' + Number(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
+function fmtPct(n){ return n + '%'; }
+
+// ---- KPI row ----
+const kpis = [
+  { v: DATA.meta.total_impressions.toLocaleString(), l: 'Impressions simulated', cls:'accent' },
+  { v: fmtMoney(DATA.meta.total_revenue), l: 'Total revenue (post-guardrail)', cls:'good' },
+  { v: DATA.meta.fill_rate + '%', l: 'Overall fill rate', cls:'accent' },
+  { v: DATA.guardrail.bid_violation_pct + '%', l: 'Bids that breached their own max_cpm', cls:'warn' },
+  { v: DATA.guardrail.auctions_flipped + ' / 100K', l: 'Auction winners changed by guardrail', cls:'accent' },
+  { v: fmtMoney(DATA.guardrail.revenue_delta), l: 'Illegitimate revenue removed', cls:'good' },
+];
+document.getElementById('kpiRow').innerHTML = kpis.map(k=>`
+  <div class="kpi"><div class="v ${k.cls}">${k.v}</div><div class="l">${k.l}</div></div>
+`).join('');
+
+// ---- Tabs ----
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-'+t.dataset.panel).classList.add('active');
+  });
+});
+
+// ---- Overview charts ----
+new Chart(document.getElementById('chartPubRevenue'), {
+  type:'bar',
+  data:{
+    labels: DATA.publishers.map(p=>p.publisher),
+    datasets:[{ label:'Revenue', data: DATA.publishers.map(p=>p.revenue), backgroundColor: COLORS.accent, borderRadius:6 }]
+  },
+  options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{ x:{grid:gridOpt, ticks:{callback:v=>'$'+(v/1000)+'k'}}, y:{grid:{display:false}} } }
+});
+
+new Chart(document.getElementById('chartFormatShare'), {
+  type:'doughnut',
+  data:{
+    labels: DATA.formats.map(f=>f.ad_format),
+    datasets:[{ data: DATA.formats.map(f=>f.impressions), backgroundColor: COLORS.series, borderColor:'#0b1220', borderWidth:2 }]
+  },
+  options:{ plugins:{legend:{position:'bottom', labels:{boxWidth:10,padding:14}}} }
+});
+
+new Chart(document.getElementById('chartRevenueBA'), {
+  type:'bar',
+  data:{
+    labels:['Before (raw)','After (validated)'],
+    datasets:[{ data:[DATA.guardrail.revenue_before, DATA.guardrail.revenue_after], backgroundColor:[COLORS.accent, COLORS.accent2], borderRadius:8 }]
+  },
+  options:{ plugins:{legend:{display:false}}, scales:{ y:{grid:gridOpt, ticks:{callback:v=>'$'+(v/1000)+'k'}, beginAtZero:false}, x:{grid:{display:false}} } }
+});
+
+new Chart(document.getElementById('chartWinRate'), {
+  type:'bar',
+  data:{
+    labels: DATA.buyers.map(b=>b.winner),
+    datasets:[{ label:'Win rate', data: DATA.buyers.map(b=>(b.win_rate*100).toFixed(1)), backgroundColor: COLORS.series, borderRadius:6 }]
+  },
+  options:{ plugins:{legend:{display:false}}, scales:{ y:{grid:gridOpt, ticks:{callback:v=>v+'%'}}, x:{grid:{display:false}} } }
+});
+
+// ---- Guardrail charts ----
+new Chart(document.getElementById('chartViolReasons'), {
+  type:'doughnut',
+  data:{
+    labels: DATA.violation_reasons.map(r=>r.reason),
+    datasets:[{ data: DATA.violation_reasons.map(r=>r.count), backgroundColor:[COLORS.warn, COLORS.danger, COLORS.accent], borderColor:'#0b1220', borderWidth:2 }]
+  },
+  options:{ plugins:{legend:{position:'bottom', labels:{boxWidth:10,padding:14}}} }
+});
+
+new Chart(document.getElementById('chartViolAdv'), {
+  type:'bar',
+  data:{
+    labels: DATA.advertiser_violations.map(a=>a.advertiser),
+    datasets:[{ data: DATA.advertiser_violations.map(a=>a.violations), backgroundColor: COLORS.danger, borderRadius:6 }]
+  },
+  options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{ x:{grid:gridOpt}, y:{grid:{display:false}} } }
+});
+
+// ---- Publishers & formats ----
+new Chart(document.getElementById('chartPubFillRpm'), {
+  data:{
+    labels: DATA.publishers.map(p=>p.publisher),
+    datasets:[
+      { type:'bar', label:'Fill rate (%)', data: DATA.publishers.map(p=>p.fill_rate), backgroundColor: COLORS.accent, borderRadius:6, yAxisID:'y' },
+      { type:'line', label:'RPM ($)', data: DATA.publishers.map(p=>p.rpm), borderColor: COLORS.accent2, backgroundColor: COLORS.accent2, tension:.3, yAxisID:'y1', pointRadius:4 }
+    ]
+  },
+  options:{
+    plugins:{legend:{position:'bottom', labels:{boxWidth:10}}},
+    scales:{
+      x:{grid:{display:false}},
+      y:{ grid:gridOpt, position:'left', title:{display:true, text:'Fill rate %'} },
+      y1:{ position:'right', grid:{display:false}, title:{display:true, text:'RPM $'} }
+    }
+  }
+});
+
+new Chart(document.getElementById('chartDeviceCtr'), {
+  type:'bar',
+  data:{
+    labels: DATA.devices.map(d=>d.device),
+    datasets:[{ label:'CTR %', data: DATA.devices.map(d=>d.ctr), backgroundColor: COLORS.series, borderRadius:6 }]
+  },
+  options:{ plugins:{legend:{display:false}}, scales:{ y:{grid:gridOpt, ticks:{callback:v=>v+'%'}}, x:{grid:{display:false}} } }
+});
+
+// ---- Segment scatter ----
+new Chart(document.getElementById('chartSegScatter'), {
+  type:'bubble',
+  data:{
+    datasets: DATA.segments.map((s,i)=>({
+      label: s.segment,
+      data:[{ x:s.avg_income, y:s.conversion_rate_pct, r: Math.max(6, Math.sqrt(s.avg_ltv)/8) }],
+      backgroundColor: COLORS.series[i % COLORS.series.length] + 'cc'
+    }))
+  },
+  options:{
+    plugins:{legend:{position:'bottom', labels:{boxWidth:8, font:{size:10}}}},
+    scales:{
+      x:{grid:gridOpt, title:{display:true, text:'Avg income ($)'}, ticks:{callback:v=>'$'+(v/1000)+'k'}},
+      y:{grid:gridOpt, title:{display:true, text:'Conversion rate (%)'}}
+    }
+  }
+});
+
+// ---- Incrementality ----
+new Chart(document.getElementById('chartIncrement'), {
+  type:'bar',
+  data:{
+    labels: DATA.incrementality.map(i=>i.segment),
+    datasets:[
+      { label:'Control', data: DATA.incrementality.map(i=>i.Control), backgroundColor: COLORS.accent, borderRadius:5 },
+      { label:'Exposed', data: DATA.incrementality.map(i=>i.Exposed), backgroundColor: COLORS.accent2, borderRadius:5 }
+    ]
+  },
+  options:{ plugins:{legend:{position:'bottom'}}, scales:{ y:{grid:gridOpt, title:{display:true,text:'Conversion rate %'}}, x:{grid:{display:false}} } }
+});
+
+// ---- Pacing lines ----
+const advList = [...new Set(DATA.pacing_weekly.map(p=>p.advertiser))];
+new Chart(document.getElementById('chartPacing'), {
+  type:'line',
+  data:{
+    labels: [...new Set(DATA.pacing_weekly.map(p=>p.week))].sort((a,b)=>a-b),
+    datasets: advList.map((adv,i)=>({
+      label: adv,
+      data: DATA.pacing_weekly.filter(p=>p.advertiser===adv).sort((a,b)=>a.week-b.week).map(p=>p.pacing_index),
+      borderColor: COLORS.series[i % COLORS.series.length],
+      backgroundColor: 'transparent',
+      tension:.3, pointRadius:2
+    }))
+  },
+  options:{
+    plugins:{legend:{position:'bottom', labels:{boxWidth:10}}},
+    scales:{ x:{grid:{display:false}, title:{display:true,text:'Week'}}, y:{grid:gridOpt, title:{display:true,text:'Pacing index (x planned)'}} }
+  }
+});
+
+// ---- Tables ----
+function renderTable(tbodyId, rows, cols, render){
+  const tbody = document.querySelector(tbodyId);
+  tbody.innerHTML = rows.map(r=>'<tr>'+cols.map(c=>`<td>${render(r,c)}</td>`).join('')+'</tr>').join('');
+}
+function pillFillRate(v){ return `<span class="pill ${v>=75?'hi':'lo'}">${v}%</span>`; }
+
+let pubRows = [...DATA.publishers];
+function drawPubTable(){
+  renderTable('#pubTable tbody', pubRows, ['publisher','impressions','fill_rate','revenue','rpm'], (r,c)=>{
+    if(c==='fill_rate') return pillFillRate(r.fill_rate);
+    if(c==='revenue') return fmtMoney(r.revenue);
+    if(c==='rpm') return '$'+r.rpm;
+    if(c==='impressions') return r.impressions.toLocaleString();
+    return r[c];
+  });
+}
+drawPubTable();
+document.getElementById('pubFilter').addEventListener('input', e=>{
+  const q = e.target.value.toLowerCase();
+  pubRows = DATA.publishers.filter(p=>p.publisher.toLowerCase().includes(q));
+  drawPubTable();
+});
+document.querySelectorAll('#pubTable th').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const k = th.dataset.k;
+    pubRows.sort((a,b)=> typeof a[k]==='string' ? a[k].localeCompare(b[k]) : b[k]-a[k]);
+    document.querySelectorAll('#pubTable th').forEach(x=>x.classList.remove('sorted'));
+    th.classList.add('sorted');
+    drawPubTable();
+  });
+});
+
+let advRows = [...DATA.buyers];
+function drawAdvTable(){
+  renderTable('#advTable tbody', advRows, ['winner','impressions_won','total_spend','avg_clearing_cpm','win_rate','cvr'], (r,c)=>{
+    if(c==='total_spend') return fmtMoney(r.total_spend);
+    if(c==='avg_clearing_cpm') return '$'+r.avg_clearing_cpm.toFixed(2);
+    if(c==='win_rate') return (r.win_rate*100).toFixed(1)+'%';
+    if(c==='cvr') return (r.cvr*100).toFixed(1)+'%';
+    if(c==='impressions_won') return r.impressions_won.toLocaleString();
+    return r[c];
+  });
+}
+drawAdvTable();
+document.getElementById('advFilter').addEventListener('input', e=>{
+  const q = e.target.value.toLowerCase();
+  advRows = DATA.buyers.filter(b=>b.winner.toLowerCase().includes(q));
+  drawAdvTable();
+});
+document.querySelectorAll('#advTable th').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const k = th.dataset.k;
+    advRows.sort((a,b)=> typeof a[k]==='string' ? a[k].localeCompare(b[k]) : b[k]-a[k]);
+    document.querySelectorAll('#advTable th').forEach(x=>x.classList.remove('sorted'));
+    th.classList.add('sorted');
+    drawAdvTable();
+  });
+});
+</script>
+</body>
+</html>

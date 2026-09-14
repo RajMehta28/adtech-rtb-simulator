@@ -1,0 +1,9 @@
+segment,segment_size,avg_income,avg_order_value,avg_ltv,avg_purchases,converters,conversion_rate_pct
+affluent_traveler,268,199624.0,299.58,15541.57,12.9,61,22.76
+high_value_customer,3969,136057.0,203.62,9254.61,10.9,784,19.75
+young_high_spender,6149,92465.0,141.95,4215.3,6.6,823,13.38
+loyalty_high_ltv,6706,88449.0,126.86,3681.77,6.6,904,13.48
+re_engagement,12748,76380.0,105.35,2739.47,5.6,1557,12.21
+lapsed_customer,26166,66052.0,83.62,2059.73,4.8,2831,10.82
+price_sensitive,1673,71248.0,17.11,450.41,6.7,209,12.49
+high_intent_no_purchase,2698,29929.0,38.4,0.0,0.0,146,5.41

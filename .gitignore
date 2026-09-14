@@ -1,0 +1,23 @@
+# Large generated artifacts — regenerate locally with:
+#   python src/component1_rtb_simulator.py
+#   python src/component2_cdp_audiences.py
+#   python src/component3_ssp_yield.py
+#   python src/component4_dashboard_prep.py
+data/auctions.csv
+data/guardrail_audit_log.csv
+data/users.csv
+data/users_scored.csv
+data/segments.csv
+data/adtech.db
+data/dashboard_auctions.csv
+data/dashboard_incrementality.csv
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
