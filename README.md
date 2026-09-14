@@ -2,9 +2,9 @@
 
 A 100,000-impression real-time bidding (RTB) simulation covering the full programmatic pipeline — DSP bidding strategies, a CDP with ML-based lookalike scoring, SSP yield analysis, and BI-ready dashboard prep — extended with an independent bid-validation and budget-anomaly guardrail layer.
 
-**[View the interactive dashboard →](https://<your-username>.github.io/<your-repo>/)** *(replace with your live GitHub Pages URL once enabled — see below)*
+**[View the interactive dashboard →](https://rajmehta28.github.io/adtech-rtb-simulator/)**
 
-[![Dashboard preview](docs/assets/preview.png)](https://<your-username>.github.io/<your-repo>/)
+[![Dashboard preview](docs/assets/preview.png)](https://rajmehta28.github.io/adtech-rtb-simulator/)
 
 ## What this is
 
@@ -47,12 +47,7 @@ The large generated files (`auctions.csv`, `guardrail_audit_log.csv`, `users.csv
 
 `docs/index.html` is a single self-contained, no-build-step HTML page (Chart.js via CDN) built directly from this project's own output data — every chart and KPI reflects the actual simulation run, not placeholder numbers.
 
-### Enabling GitHub Pages
-1. Push this repo to GitHub (commands below).
-2. Go to **Settings → Pages**.
-3. Under "Build and deployment": **Source: Deploy from a branch**, **Branch: main**, **Folder: /docs**.
-4. Save — GitHub publishes it at `https://<username>.github.io/<repo>/` within a minute or two.
-5. Update the link at the top of this README once it's live.
+If the dashboard link above 404s, GitHub Pages just isn't turned on yet for this repo: **Settings → Pages → Source: Deploy from a branch → Branch: main, Folder: /docs → Save**. It goes live within a minute or two.
 
 ## Stack
 
