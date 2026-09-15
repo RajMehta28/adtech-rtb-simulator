@@ -6,43 +6,46 @@
 <title>AdTech RTB Simulator — Guardrail Intelligence Dashboard</title>
 <style>
   :root{
-    --bg:#0b1220; --panel:#121b2e; --panel2:#16223a; --border:#263457;
-    --text:#eef2ff; --sub:#93a1c4; --accent:#4f8cff; --accent2:#22d3a5;
-    --warn:#ffb648; --danger:#ff6b6b;
+    --bg:#f7f2ea; --panel:#fffdfa; --panel2:#efe7d8; --border:#e0d5bf;
+    --text:#241f16; --sub:#75695a; --accent:#a8461f; --accent2:#3d6b4d;
+    --warn:#8a5a12; --danger:#9c3f34;
   }
   *{box-sizing:border-box;}
   body{
-    margin:0; background:linear-gradient(160deg,#0b1220 0%,#0d1526 55%,#0b1220 100%);
-    color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+    margin:0; background:var(--bg);
+    color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     padding:32px 5vw 64px;
   }
   a{color:var(--accent);}
-  h1{font-size:clamp(26px,4vw,42px); font-weight:800; letter-spacing:-0.02em; margin:0 0 8px; line-height:1.15;}
-  h1 span{color:var(--accent);}
-  .sub{color:var(--sub); font-size:15px; max-width:760px; line-height:1.55; margin-bottom:6px;}
+  h1{
+    font-family:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,"Times New Roman",serif;
+    font-size:clamp(28px,4vw,44px); font-weight:700; letter-spacing:-0.01em; margin:0 0 10px; line-height:1.18;
+  }
+  h1 span{color:var(--accent); font-style:italic;}
+  .sub{color:var(--sub); font-size:15px; max-width:760px; line-height:1.6; margin-bottom:6px;}
   .eyebrow{
     display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:700;
-    letter-spacing:0.1em; text-transform:uppercase; color:var(--accent2);
-    background:rgba(34,211,165,.1); border:1px solid rgba(34,211,165,.3);
-    padding:5px 12px; border-radius:999px; margin-bottom:16px;
+    letter-spacing:0.12em; text-transform:uppercase; color:var(--accent);
+    margin-bottom:14px;
   }
-  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);}
-  .toprow{display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;}
-  .meta-note{font-size:13px; color:var(--sub); text-align:right;}
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+  .toprow{display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; border-bottom:2px solid var(--text); padding-bottom:24px;}
+  .meta-note{font-size:13px; color:var(--sub); text-align:right; line-height:1.6;}
+  .meta-note strong{color:var(--text);}
 
   .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin:28px 0;}
-  .kpi{background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:18px 20px;}
-  .kpi .v{font-family:"SF Mono",Consolas,monospace; font-size:26px; font-weight:700; line-height:1; margin-bottom:8px;}
+  .kpi{background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:18px 20px; box-shadow:0 1px 2px rgba(60,45,20,.04);}
+  .kpi .v{font-family:"SF Mono",Consolas,monospace; font-size:25px; font-weight:700; line-height:1; margin-bottom:8px; color:var(--text);}
   .kpi .l{font-size:12.5px; color:var(--sub); line-height:1.4;}
   .v.good{color:var(--accent2);} .v.warn{color:var(--warn);} .v.accent{color:var(--accent);}
 
-  .tabs{display:flex; gap:6px; flex-wrap:wrap; margin:36px 0 18px; border-bottom:1px solid var(--border); padding-bottom:0;}
+  .tabs{display:flex; gap:22px; flex-wrap:wrap; margin:36px 0 20px; border-bottom:1px solid var(--border); padding-bottom:0;}
   .tab{
     background:none; border:none; color:var(--sub); font-size:13.5px; font-weight:600;
-    padding:10px 16px; cursor:pointer; border-bottom:2px solid transparent; transition:.15s;
+    padding:0 0 12px; cursor:pointer; border-bottom:2px solid transparent; transition:.15s;
   }
   .tab:hover{color:var(--text);}
-  .tab.active{color:var(--text); border-bottom-color:var(--accent);}
+  .tab.active{color:var(--accent); border-bottom-color:var(--accent);}
   .panel{display:none;}
   .panel.active{display:block; animation:fade .25s ease;}
   @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
@@ -51,56 +54,56 @@
   .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
   @media(max-width:900px){ .grid2,.grid3{grid-template-columns:1fr;} }
 
-  .card{background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:22px 24px; margin-bottom:16px;}
-  .card h3{font-size:14.5px; font-weight:700; margin:0 0 14px; display:flex; align-items:center; gap:8px;}
-  .card p.note{font-size:12.5px; color:var(--sub); margin:10px 0 0; line-height:1.5;}
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:22px 24px; margin-bottom:16px; box-shadow:0 1px 2px rgba(60,45,20,.04);}
+  .card h3{font-size:14.5px; font-weight:700; margin:0 0 14px; display:flex; align-items:center; gap:8px; color:var(--text);}
+  .card p.note{font-size:12.5px; color:var(--sub); margin:10px 0 0; line-height:1.55;}
   .chartwrap{position:relative; height:280px;}
   .chartwrap.tall{height:340px;}
   .chartwrap svg{width:100%; height:100%; display:block; overflow:visible;}
   .legend{display:flex; flex-wrap:wrap; gap:10px 16px; margin-top:10px; font-size:11.5px; color:var(--sub);}
-  .legend .sw{display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:6px; vertical-align:middle;}
+  .legend .sw{display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:6px; vertical-align:middle;}
 
   table{width:100%; border-collapse:collapse; font-size:13px;}
   th{
-    text-align:left; color:var(--sub); font-weight:600; font-size:11.5px; text-transform:uppercase;
-    letter-spacing:.04em; padding:8px 10px; border-bottom:1px solid var(--border); cursor:pointer; user-select:none;
+    text-align:left; color:var(--sub); font-weight:700; font-size:11px; text-transform:uppercase;
+    letter-spacing:.05em; padding:8px 10px; border-bottom:2px solid var(--text); cursor:pointer; user-select:none;
   }
-  th:hover{color:var(--text);}
+  th:hover{color:var(--accent);}
   th.sorted::after{content:" ▾"; color:var(--accent);}
-  td{padding:9px 10px; border-bottom:1px solid rgba(255,255,255,.04); color:var(--text);}
-  tr:hover td{background:rgba(255,255,255,.02);}
-  .pill{display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600;}
-  .pill.hi{background:rgba(34,211,165,.15); color:var(--accent2);}
-  .pill.lo{background:rgba(255,107,107,.15); color:var(--danger);}
+  td{padding:9px 10px; border-bottom:1px solid var(--border); color:var(--text);}
+  tr:hover td{background:rgba(168,70,31,.05);}
+  .pill{display:inline-block; padding:2px 8px; border-radius:3px; font-size:11px; font-weight:700;}
+  .pill.hi{background:rgba(61,107,77,.12); color:var(--accent2);}
+  .pill.lo{background:rgba(156,63,52,.12); color:var(--danger);}
   .filterbar{display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;}
   .filterbar input{
     background:var(--panel2); border:1px solid var(--border); color:var(--text);
-    padding:8px 12px; border-radius:8px; font-size:13px; flex:1; min-width:160px;
+    padding:8px 12px; border-radius:4px; font-size:13px; flex:1; min-width:160px;
   }
   .finding{
-    background:linear-gradient(135deg, rgba(255,107,107,.09), rgba(18,27,46,0));
-    border:1px solid rgba(255,107,107,.35); border-radius:16px; padding:20px 24px; margin-bottom:16px;
+    background:#fbf1ea;
+    border:1px solid #e3c3ad; border-left:3px solid var(--danger); border-radius:6px; padding:20px 24px; margin-bottom:16px;
     display:flex; gap:16px; align-items:flex-start;
   }
   .finding .icon{font-size:22px;}
-  .finding h4{margin:0 0 6px; font-size:15px;}
-  .finding p{margin:0; font-size:13px; color:var(--sub); line-height:1.55;}
-  code{font-family:"SF Mono",Consolas,monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:5px; color:#ffd8a8; font-size:12.5px;}
+  .finding h4{margin:0 0 6px; font-size:15px; color:var(--text);}
+  .finding p{margin:0; font-size:13px; color:var(--sub); line-height:1.6;}
+  code{font-family:"SF Mono",Consolas,monospace; background:var(--panel2); padding:1px 6px; border-radius:4px; color:var(--accent); font-size:12.5px;}
   .footer{margin-top:40px; padding-top:20px; border-top:1px solid var(--border); font-size:12.5px; color:var(--sub); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;}
-  .chip{font-size:11.5px; font-weight:600; padding:5px 11px; border-radius:999px; background:var(--panel2); border:1px solid var(--border); color:var(--sub); margin-right:6px;}
+  .chip{font-size:11.5px; font-weight:600; padding:5px 11px; border-radius:3px; background:var(--panel2); border:1px solid var(--border); color:var(--sub); margin-right:6px;}
 
   #tooltip{
-    position:fixed; z-index:50; pointer-events:none; background:#0a1120; border:1px solid var(--border);
-    border-radius:10px; padding:10px 13px; font-size:12px; line-height:1.5; color:var(--text);
-    box-shadow:0 12px 30px rgba(0,0,0,.45); max-width:240px; opacity:0; transition:opacity .1s;
+    position:fixed; z-index:50; pointer-events:none; background:#fffdfa; border:1px solid var(--border);
+    border-radius:6px; padding:10px 13px; font-size:12px; line-height:1.55; color:var(--text);
+    box-shadow:0 8px 24px rgba(60,45,20,.16); max-width:240px; opacity:0; transition:opacity .1s;
   }
   #tooltip.show{opacity:1;}
-  #tooltip b{color:#fff;}
+  #tooltip b{color:var(--text);}
   #tooltip .tip-row{display:flex; justify-content:space-between; gap:14px; color:var(--sub);}
   #tooltip .tip-row span:last-child{color:var(--text); font-family:"SF Mono",Consolas,monospace;}
   .clickable{cursor:pointer;}
   tr.flash-highlight{animation:flashRow 1.6s ease;}
-  @keyframes flashRow{ 0%{background:rgba(79,140,255,.35);} 100%{background:transparent;} }
+  @keyframes flashRow{ 0%{background:rgba(168,70,31,.22);} 100%{background:transparent;} }
 </style>
 </head>
 <body>
@@ -255,9 +258,9 @@
 const DATA = {"meta": {"total_impressions": 100000, "total_users": 50000, "total_revenue": 451960.26, "fill_rate": 78.2, "avg_clearing_cpm": 4.52, "total_clicks": 128, "total_conversions": 9, "total_audit_events": 68932}, "guardrail": {"bid_violation_pct": 14.4, "floor_violation_pct_toyota": 2.3, "auctions_flipped": 66, "auctions_flipped_pct": 0.066, "revenue_before": 453206.19, "revenue_after": 451960.26, "revenue_delta": -1245.94, "anomaly_threshold_x": 3.0, "anomaly_max_observed_x": 1.84, "anomalies_flagged": 0}, "publishers": [{"publisher": "reddit.com", "impressions": 16522, "filled": 12676, "revenue": 120255.0426, "fill_rate": 76.7, "rpm": 7278.48}, {"publisher": "cnn.com", "impressions": 16968, "filled": 13883, "revenue": 90118.2734, "fill_rate": 81.8, "rpm": 5311.07}, {"publisher": "nytimes.com", "impressions": 16521, "filled": 13477, "revenue": 80655.7782, "fill_rate": 81.6, "rpm": 4882.02}, {"publisher": "espn.com", "impressions": 16701, "filled": 12793, "revenue": 71409.549, "fill_rate": 76.6, "rpm": 4275.76}, {"publisher": "weather.com", "impressions": 16608, "filled": 12668, "revenue": 51354.8702, "fill_rate": 76.3, "rpm": 3092.18}, {"publisher": "buzzfeed.com", "impressions": 16680, "filled": 12738, "revenue": 38166.7435, "fill_rate": 76.4, "rpm": 2288.17}], "formats": [{"ad_format": "ctv", "impressions": 5011, "filled": 0, "revenue": 0.0, "clicks": 7, "fill_rate": 0.0, "ctr": 0.14}, {"ad_format": "display", "impressions": 45022, "filled": 45022, "revenue": 256501.0409, "clicks": 55, "fill_rate": 100.0, "ctr": 0.122}, {"ad_format": "mobile", "impressions": 29937, "filled": 29937, "revenue": 170941.8637, "clicks": 24, "fill_rate": 100.0, "ctr": 0.08}, {"ad_format": "native", "impressions": 8046, "filled": 3276, "revenue": 24517.3523, "clicks": 12, "fill_rate": 40.7, "ctr": 0.149}, {"ad_format": "video", "impressions": 11984, "filled": 0, "revenue": 0.0, "clicks": 30, "fill_rate": 0.0, "ctr": 0.25}], "devices": [{"device": "ctv", "impressions": 10097, "revenue": 41915.1972, "clicks": 1, "ctr": 0.01}, {"device": "desktop", "impressions": 34723, "revenue": 177760.5153, "clicks": 28, "ctr": 0.081}, {"device": "mobile", "impressions": 45316, "revenue": 199196.8012, "clicks": 83, "ctr": 0.183}, {"device": "tablet", "impressions": 9864, "revenue": 33087.7432, "clicks": 16, "ctr": 0.162}], "buyers": [{"winner": "Netflix", "impressions_won": 47074, "total_spend": 244337.3145, "avg_clearing_cpm": 5.1905, "avg_winning_bid": 8.009, "total_clicks": 56, "total_conversions": 2, "win_rate": 0.4707, "ctr": 0.0012, "cvr": 0.0357}, {"winner": "AmericanExpress", "impressions_won": 23352, "total_spend": 159698.312, "avg_clearing_cpm": 6.8387, "avg_winning_bid": 8.323, "total_clicks": 24, "total_conversions": 2, "win_rate": 0.2335, "ctr": 0.001, "cvr": 0.0833}, {"winner": "Nike", "impressions_won": 4442, "total_spend": 26455.9428, "avg_clearing_cpm": 5.9559, "avg_winning_bid": 6.6865, "total_clicks": 2, "total_conversions": 1, "win_rate": 0.0444, "ctr": 0.0005, "cvr": 0.5}, {"winner": "Toyota", "impressions_won": 3367, "total_spend": 21468.6876, "avg_clearing_cpm": 6.3762, "avg_winning_bid": 8.1937, "total_clicks": 1, "total_conversions": 0, "win_rate": 0.0337, "ctr": 0.0003, "cvr": 0.0}], "segments": [{"segment": "affluent_traveler", "segment_size": 268, "avg_income": 199624.0, "avg_order_value": 299.58, "avg_ltv": 15541.57, "avg_purchases": 12.9, "converters": 61, "conversion_rate_pct": 22.76}, {"segment": "high_value_customer", "segment_size": 3969, "avg_income": 136057.0, "avg_order_value": 203.62, "avg_ltv": 9254.61, "avg_purchases": 10.9, "converters": 784, "conversion_rate_pct": 19.75}, {"segment": "young_high_spender", "segment_size": 6149, "avg_income": 92465.0, "avg_order_value": 141.95, "avg_ltv": 4215.3, "avg_purchases": 6.6, "converters": 823, "conversion_rate_pct": 13.38}, {"segment": "loyalty_high_ltv", "segment_size": 6706, "avg_income": 88449.0, "avg_order_value": 126.86, "avg_ltv": 3681.77, "avg_purchases": 6.6, "converters": 904, "conversion_rate_pct": 13.48}, {"segment": "re_engagement", "segment_size": 12748, "avg_income": 76380.0, "avg_order_value": 105.35, "avg_ltv": 2739.47, "avg_purchases": 5.6, "converters": 1557, "conversion_rate_pct": 12.21}, {"segment": "lapsed_customer", "segment_size": 26166, "avg_income": 66052.0, "avg_order_value": 83.62, "avg_ltv": 2059.73, "avg_purchases": 4.8, "converters": 2831, "conversion_rate_pct": 10.82}, {"segment": "price_sensitive", "segment_size": 1673, "avg_income": 71248.0, "avg_order_value": 17.11, "avg_ltv": 450.41, "avg_purchases": 6.7, "converters": 209, "conversion_rate_pct": 12.49}, {"segment": "high_intent_no_purchase", "segment_size": 2698, "avg_income": 29929.0, "avg_order_value": 38.4, "avg_ltv": 0.0, "avg_purchases": 0.0, "converters": 146, "conversion_rate_pct": 5.41}], "incrementality": [{"segment": "affluent", "Control": 3.99, "Exposed": 4.53, "lift_pct": 13.8}, {"segment": "general", "Control": 3.29, "Exposed": 4.91, "lift_pct": 49.3}, {"segment": "high_intent", "Control": 3.56, "Exposed": 5.05, "lift_pct": 42.0}, {"segment": "high_value", "Control": 3.62, "Exposed": 4.02, "lift_pct": 11.3}, {"segment": "lapsed", "Control": 3.91, "Exposed": 5.07, "lift_pct": 29.8}], "pacing_weekly": [{"advertiser": "AmericanExpress", "week": 1, "pacing_index": 1.594, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 2, "pacing_index": 1.56, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 3, "pacing_index": 1.579, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 4, "pacing_index": 1.582, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 5, "pacing_index": 1.579, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 6, "pacing_index": 1.593, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 7, "pacing_index": 1.591, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 8, "pacing_index": 1.59, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 9, "pacing_index": 1.59, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 10, "pacing_index": 1.586, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 11, "pacing_index": 1.586, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 12, "pacing_index": 1.588, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 13, "pacing_index": 1.595, "anomalies": 0}, {"advertiser": "Netflix", "week": 1, "pacing_index": 1.628, "anomalies": 0}, {"advertiser": "Netflix", "week": 2, "pacing_index": 1.605, "anomalies": 0}, {"advertiser": "Netflix", "week": 3, "pacing_index": 1.623, "anomalies": 0}, {"advertiser": "Netflix", "week": 4, "pacing_index": 1.619, "anomalies": 0}, {"advertiser": "Netflix", "week": 5, "pacing_index": 1.606, "anomalies": 0}, {"advertiser": "Netflix", "week": 6, "pacing_index": 1.613, "anomalies": 0}, {"advertiser": "Netflix", "week": 7, "pacing_index": 1.62, "anomalies": 0}, {"advertiser": "Netflix", "week": 8, "pacing_index": 1.621, "anomalies": 0}, {"advertiser": "Netflix", "week": 9, "pacing_index": 1.622, "anomalies": 0}, {"advertiser": "Netflix", "week": 10, "pacing_index": 1.621, "anomalies": 0}, {"advertiser": "Netflix", "week": 11, "pacing_index": 1.621, "anomalies": 0}, {"advertiser": "Netflix", "week": 12, "pacing_index": 1.627, "anomalies": 0}, {"advertiser": "Netflix", "week": 13, "pacing_index": 1.63, "anomalies": 0}, {"advertiser": "Nike", "week": 1, "pacing_index": 0.47, "anomalies": 0}, {"advertiser": "Nike", "week": 2, "pacing_index": 0.505, "anomalies": 0}, {"advertiser": "Nike", "week": 3, "pacing_index": 0.511, "anomalies": 0}, {"advertiser": "Nike", "week": 4, "pacing_index": 0.518, "anomalies": 0}, {"advertiser": "Nike", "week": 5, "pacing_index": 0.528, "anomalies": 0}, {"advertiser": "Nike", "week": 6, "pacing_index": 0.532, "anomalies": 0}, {"advertiser": "Nike", "week": 7, "pacing_index": 0.529, "anomalies": 0}, {"advertiser": "Nike", "week": 8, "pacing_index": 0.525, "anomalies": 0}, {"advertiser": "Nike", "week": 9, "pacing_index": 0.525, "anomalies": 0}, {"advertiser": "Nike", "week": 10, "pacing_index": 0.526, "anomalies": 0}, {"advertiser": "Nike", "week": 11, "pacing_index": 0.527, "anomalies": 0}, {"advertiser": "Nike", "week": 12, "pacing_index": 0.53, "anomalies": 0}, {"advertiser": "Nike", "week": 13, "pacing_index": 0.53, "anomalies": 0}, {"advertiser": "Toyota", "week": 1, "pacing_index": 0.546, "anomalies": 0}, {"advertiser": "Toyota", "week": 2, "pacing_index": 0.523, "anomalies": 0}, {"advertiser": "Toyota", "week": 3, "pacing_index": 0.522, "anomalies": 0}, {"advertiser": "Toyota", "week": 4, "pacing_index": 0.532, "anomalies": 0}, {"advertiser": "Toyota", "week": 5, "pacing_index": 0.53, "anomalies": 0}, {"advertiser": "Toyota", "week": 6, "pacing_index": 0.532, "anomalies": 0}, {"advertiser": "Toyota", "week": 7, "pacing_index": 0.539, "anomalies": 0}, {"advertiser": "Toyota", "week": 8, "pacing_index": 0.539, "anomalies": 0}, {"advertiser": "Toyota", "week": 9, "pacing_index": 0.54, "anomalies": 0}, {"advertiser": "Toyota", "week": 10, "pacing_index": 0.537, "anomalies": 0}, {"advertiser": "Toyota", "week": 11, "pacing_index": 0.54, "anomalies": 0}, {"advertiser": "Toyota", "week": 12, "pacing_index": 0.539, "anomalies": 0}, {"advertiser": "Toyota", "week": 13, "pacing_index": 0.537, "anomalies": 0}], "audit_events": [{"event_type": "bid_constraint_violation", "count": 68932}], "advertiser_violations": [{"advertiser": "Coca_Cola", "violations": 30209}, {"advertiser": "AmericanExpress", "violations": 21011}, {"advertiser": "Nike", "violations": 12313}, {"advertiser": "Toyota", "violations": 5399}], "violation_reasons": [{"reason": "Below PMP floor", "count": 33324}, {"reason": "Exceeded max_cpm", "count": 30778}, {"reason": "Below floor_cpm", "count": 4830}]};
 
 const COLORS = {
-  accent:'#4f8cff', accent2:'#22d3a5', warn:'#ffb648', danger:'#ff6b6b',
-  grid:'rgba(255,255,255,.08)', text:'#93a1c4',
-  series:['#4f8cff','#22d3a5','#ffb648','#ff6b6b','#a78bfa','#38bdf8']
+  accent:'#a8461f', accent2:'#3d6b4d', warn:'#8a5a12', danger:'#9c3f34',
+  grid:'rgba(36,31,22,.10)', text:'#75695a',
+  series:['#a8461f','#3d6b4d','#8a5a12','#9c3f34','#6b5c9c','#2f6f8f']
 };
 
 function fmtMoney(n){ return '$' + Number(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
@@ -349,9 +352,9 @@ function hBarChart(containerId, {labels, values, color, valueFmt=(v)=>v, tipFn, 
   labels.forEach((lab,i)=>{
     const y = topPad + i*rowH + (rowH-barH)/2;
     const w = Math.max(2, (values[i]/max) * plotW);
-    el('text', {x:leftLabelW-10, y:y+barH/2+4, 'text-anchor':'end', fill:'#93a1c4', 'font-size':11}, svg).textContent = lab;
+    el('text', {x:leftLabelW-10, y:y+barH/2+4, 'text-anchor':'end', fill:'#8b8170', 'font-size':11}, svg).textContent = lab;
     const bar = el('rect', {x:leftLabelW, y:y, width:w, height:barH, rx:5, fill:color}, svg);
-    el('text', {x:leftLabelW+w+8, y:y+barH/2+4, fill:'#eef2ff', 'font-size':11, 'font-family':'monospace'}, svg).textContent = valueFmt(values[i]);
+    el('text', {x:leftLabelW+w+8, y:y+barH/2+4, fill:'#221d15', 'font-size':11, 'font-family':'monospace'}, svg).textContent = valueFmt(values[i]);
     if(tipFn || onClick){
       bar.classList.add('clickable');
       if(tipFn) wireHover(bar, ()=>tipFn(i));
@@ -388,7 +391,7 @@ function vBarChart(containerId, {labels, series, valueFmt=(v)=>v, showValues=tru
       const y = topPad + plotH - barH;
       const bar = el('rect', {x, y, width:barW, height:Math.max(barH,1), rx:4, fill:s.color}, svg);
       if(showValues && series.length===1){
-        el('text', {x:x+barW/2, y:y-6, 'text-anchor':'middle', fill:'#93a1c4', 'font-size':10}, svg).textContent = valueFmt(v);
+        el('text', {x:x+barW/2, y:y-6, 'text-anchor':'middle', fill:'#8b8170', 'font-size':10}, svg).textContent = valueFmt(v);
       }
       if(tipFn || onClick){
         bar.classList.add('clickable');
@@ -396,7 +399,7 @@ function vBarChart(containerId, {labels, series, valueFmt=(v)=>v, showValues=tru
         if(onClick) bar.addEventListener('click', ()=>onClick(i,j));
       }
     });
-    el('text', {x:gx+groupW/2, y:height-12, 'text-anchor':'middle', fill:'#93a1c4', 'font-size':10.5}, svg).textContent = lab;
+    el('text', {x:gx+groupW/2, y:height-12, 'text-anchor':'middle', fill:'#8b8170', 'font-size':10.5}, svg).textContent = lab;
   });
   if(series.length>1){
     legendHTML(container, series.map(s=>({color:s.color, label:s.name})));
@@ -432,7 +435,7 @@ function doughnut(containerId, {labels, values, colors, tipFn}){
   labels.forEach((lab,i)=>{
     const ly = cy - (labels.length-1)*11 + i*22;
     el('rect', {x:460, y:ly-9, width:10, height:10, rx:2, fill:colors[i%colors.length]}, svg);
-    el('text', {x:476, y:ly, fill:'#eef2ff', 'font-size':11.5}, svg).textContent = `${lab} (${values[i].toLocaleString()})`;
+    el('text', {x:476, y:ly, fill:'#221d15', 'font-size':11.5}, svg).textContent = `${lab} (${values[i].toLocaleString()})`;
   });
 }
 
@@ -461,7 +464,7 @@ function dualAxis(containerId, {labels, bar, line, tipFn, onClick}){
     // full-height invisible hit-zone so hover/click works anywhere in the column, not just on the visible bar
     const hit = el('rect', {x:gx, y:topPad, width:groupW, height:plotH, fill:'transparent'}, svg);
     el('rect', {x:gx+(groupW-barW)/2, y:topPad+plotH-bh, width:barW, height:Math.max(bh,1), rx:4, fill:bar.color}, svg);
-    el('text', {x:gx+groupW/2, y:height-12, 'text-anchor':'middle', fill:'#93a1c4', 'font-size':10}, svg).textContent = lab;
+    el('text', {x:gx+groupW/2, y:height-12, 'text-anchor':'middle', fill:'#8b8170', 'font-size':10}, svg).textContent = lab;
     if(tipFn || onClick){
       hit.classList.add('clickable');
       if(tipFn) wireHover(hit, ()=>tipFn(i));
@@ -504,11 +507,11 @@ function lineChart(containerId, {xLabels, series}){
   for(let g=0; g<=4; g++){
     const gy = topPad + plotH - (g/4)*plotH;
     el('line', {x1:leftPad, x2:600-rightPad, y1:gy, y2:gy, stroke:COLORS.grid, 'stroke-width':1}, svg);
-    el('text', {x:leftPad-6, y:gy+3, 'text-anchor':'end', fill:'#93a1c4', 'font-size':9}, svg).textContent = (max*g/4).toFixed(1);
+    el('text', {x:leftPad-6, y:gy+3, 'text-anchor':'end', fill:'#8b8170', 'font-size':9}, svg).textContent = (max*g/4).toFixed(1);
   }
   [0, Math.floor(n/2), n-1].forEach(idx=>{
     const gx = leftPad + (idx/(n-1))*plotW;
-    el('text', {x:gx, y:height-10, 'text-anchor':'middle', fill:'#93a1c4', 'font-size':10}, svg).textContent = 'Wk '+xLabels[idx];
+    el('text', {x:gx, y:height-10, 'text-anchor':'middle', fill:'#8b8170', 'font-size':10}, svg).textContent = 'Wk '+xLabels[idx];
   });
 
   series.forEach(s=>{
@@ -545,11 +548,11 @@ function bubbleChart(containerId, {points}){
   for(let g=0; g<=4; g++){
     const gy = topPad + plotH - (g/4)*plotH;
     el('line', {x1:leftPad, x2:600-rightPad, y1:gy, y2:gy, stroke:COLORS.grid, 'stroke-width':1}, svg);
-    el('text', {x:leftPad-6, y:gy+3, 'text-anchor':'end', fill:'#93a1c4', 'font-size':9}, svg).textContent = (yMax*g/4).toFixed(0)+'%';
+    el('text', {x:leftPad-6, y:gy+3, 'text-anchor':'end', fill:'#8b8170', 'font-size':9}, svg).textContent = (yMax*g/4).toFixed(0)+'%';
   }
   [0,0.5,1].forEach(f=>{
     const gx = leftPad + f*plotW;
-    el('text', {x:gx, y:height-14, 'text-anchor':'middle', fill:'#93a1c4', 'font-size':9}, svg).textContent = '$'+Math.round(xMax*f/1000)+'k';
+    el('text', {x:gx, y:height-14, 'text-anchor':'middle', fill:'#8b8170', 'font-size':9}, svg).textContent = '$'+Math.round(xMax*f/1000)+'k';
   });
 
   points.forEach(p=>{
