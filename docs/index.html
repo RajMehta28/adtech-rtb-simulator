@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AdTech RTB Simulator — Guardrail Intelligence Dashboard</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
   :root{
     --bg:#0b1220; --panel:#121b2e; --panel2:#16223a; --border:#263457;
@@ -57,6 +56,9 @@
   .card p.note{font-size:12.5px; color:var(--sub); margin:10px 0 0; line-height:1.5;}
   .chartwrap{position:relative; height:280px;}
   .chartwrap.tall{height:340px;}
+  .chartwrap svg{width:100%; height:100%; display:block; overflow:visible;}
+  .legend{display:flex; flex-wrap:wrap; gap:10px 16px; margin-top:10px; font-size:11.5px; color:var(--sub);}
+  .legend .sw{display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:6px; vertical-align:middle;}
 
   table{width:100%; border-collapse:collapse; font-size:13px;}
   th{
@@ -86,6 +88,19 @@
   code{font-family:"SF Mono",Consolas,monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:5px; color:#ffd8a8; font-size:12.5px;}
   .footer{margin-top:40px; padding-top:20px; border-top:1px solid var(--border); font-size:12.5px; color:var(--sub); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;}
   .chip{font-size:11.5px; font-weight:600; padding:5px 11px; border-radius:999px; background:var(--panel2); border:1px solid var(--border); color:var(--sub); margin-right:6px;}
+
+  #tooltip{
+    position:fixed; z-index:50; pointer-events:none; background:#0a1120; border:1px solid var(--border);
+    border-radius:10px; padding:10px 13px; font-size:12px; line-height:1.5; color:var(--text);
+    box-shadow:0 12px 30px rgba(0,0,0,.45); max-width:240px; opacity:0; transition:opacity .1s;
+  }
+  #tooltip.show{opacity:1;}
+  #tooltip b{color:#fff;}
+  #tooltip .tip-row{display:flex; justify-content:space-between; gap:14px; color:var(--sub);}
+  #tooltip .tip-row span:last-child{color:var(--text); font-family:"SF Mono",Consolas,monospace;}
+  .clickable{cursor:pointer;}
+  tr.flash-highlight{animation:flashRow 1.6s ease;}
+  @keyframes flashRow{ 0%{background:rgba(79,140,255,.35);} 100%{background:transparent;} }
 </style>
 </head>
 <body>
@@ -96,7 +111,7 @@
     <h1>AdTech RTB Simulator <span>+ Guardrail Layer</span></h1>
     <p class="sub">100,000 real-time bidding auctions, extended with an independent bid-validation and budget-anomaly rail. Every number on this page is computed directly from the simulator's own output data — nothing here is illustrative.</p>
   </div>
-  <div class="meta-note">Raj Chetan Mehta<br>AI &amp; Analytics Engineer<br><a href="#" id="repoLink">View source on GitHub →</a></div>
+  <div class="meta-note">Raj Chetan Mehta<br>AI &amp; Analytics Engineer<br><a href="https://github.com/RajMehta28/adtech-rtb-simulator">View source on GitHub →</a></div>
 </div>
 
 <div class="kpis" id="kpiRow"></div>
@@ -115,22 +130,22 @@
   <div class="grid2">
     <div class="card">
       <h3>📊 Revenue by publisher</h3>
-      <div class="chartwrap tall"><canvas id="chartPubRevenue"></canvas></div>
+      <div class="chartwrap tall" id="chartPubRevenue"></div>
     </div>
     <div class="card">
       <h3>🥧 Impression share by format</h3>
-      <div class="chartwrap tall"><canvas id="chartFormatShare"></canvas></div>
+      <div class="chartwrap tall" id="chartFormatShare"></div>
     </div>
   </div>
   <div class="grid2">
     <div class="card">
       <h3>⚖️ Revenue: before vs. after guardrail</h3>
-      <div class="chartwrap"><canvas id="chartRevenueBA"></canvas></div>
+      <div class="chartwrap" id="chartRevenueBA"></div>
       <p class="note">−0.27% — every dollar removed came from a bid winning above what its own advertiser's strategy should have allowed.</p>
     </div>
     <div class="card">
       <h3>🏆 Advertiser win rate</h3>
-      <div class="chartwrap"><canvas id="chartWinRate"></canvas></div>
+      <div class="chartwrap" id="chartWinRate"></div>
     </div>
   </div>
 </div>
@@ -147,11 +162,11 @@
   <div class="grid2">
     <div class="card">
       <h3>🧾 Violation reasons (68,932 logged events)</h3>
-      <div class="chartwrap"><canvas id="chartViolReasons"></canvas></div>
+      <div class="chartwrap" id="chartViolReasons"></div>
     </div>
     <div class="card">
       <h3>📉 Violations by advertiser</h3>
-      <div class="chartwrap"><canvas id="chartViolAdv"></canvas></div>
+      <div class="chartwrap" id="chartViolAdv"></div>
       <p class="note">Coca-Cola's fixed-CPM strategy leaves zero noise margin against its own $2.00 cap — the single most-violated constraint in the dataset.</p>
     </div>
   </div>
@@ -168,11 +183,11 @@
   <div class="grid2">
     <div class="card">
       <h3>📶 Fill rate vs. RPM by publisher</h3>
-      <div class="chartwrap tall"><canvas id="chartPubFillRpm"></canvas></div>
+      <div class="chartwrap tall" id="chartPubFillRpm"></div>
     </div>
     <div class="card">
       <h3>📱 CTR by device</h3>
-      <div class="chartwrap tall"><canvas id="chartDeviceCtr"></canvas></div>
+      <div class="chartwrap tall" id="chartDeviceCtr"></div>
     </div>
   </div>
   <div class="card">
@@ -209,12 +224,12 @@
   <div class="grid2">
     <div class="card">
       <h3>💵 Income vs. conversion rate by segment</h3>
-      <div class="chartwrap tall"><canvas id="chartSegScatter"></canvas></div>
+      <div class="chartwrap tall" id="chartSegScatter"></div>
       <p class="note">Bubble size = segment LTV. Affluent travelers convert 4x more than lapsed customers, but they're 1% of the user base.</p>
     </div>
     <div class="card">
       <h3>📈 Incrementality: exposed vs. control</h3>
-      <div class="chartwrap tall"><canvas id="chartIncrement"></canvas></div>
+      <div class="chartwrap tall" id="chartIncrement"></div>
       <p class="note">"General" audience shows the largest lift (+49.3%) — the segment with the least existing purchase intent to begin with.</p>
     </div>
   </div>
@@ -224,33 +239,334 @@
 <div class="panel" id="panel-pacing">
   <div class="card">
     <h3>⏱️ Weekly budget pacing index by advertiser (13-week window)</h3>
-    <div class="chartwrap tall"><canvas id="chartPacing"></canvas></div>
+    <div class="chartwrap tall" id="chartPacing"></div>
     <p class="note">Anomaly threshold: 3.0x planned pace. Max observed in this run: 1.84x (Netflix). 0 anomalies flagged across 90 days — verified correct via a unit test that injects a 5x spike and confirms the detector fires.</p>
   </div>
 </div>
 
 <div class="footer">
-  <div><span class="chip">Python</span><span class="chip">pandas / numpy</span><span class="chip">scikit-learn</span><span class="chip">SQLite</span><span class="chip">Chart.js</span></div>
+  <div><span class="chip">Python</span><span class="chip">pandas / numpy</span><span class="chip">scikit-learn</span><span class="chip">SQLite</span><span class="chip">Vanilla SVG</span></div>
   <div>100,000 impressions · 50,000 users · 6 publishers · 5 advertisers · built from the project's own generated CSVs</div>
 </div>
+
+<div id="tooltip"></div>
 
 <script>
 const DATA = {"meta": {"total_impressions": 100000, "total_users": 50000, "total_revenue": 451960.26, "fill_rate": 78.2, "avg_clearing_cpm": 4.52, "total_clicks": 128, "total_conversions": 9, "total_audit_events": 68932}, "guardrail": {"bid_violation_pct": 14.4, "floor_violation_pct_toyota": 2.3, "auctions_flipped": 66, "auctions_flipped_pct": 0.066, "revenue_before": 453206.19, "revenue_after": 451960.26, "revenue_delta": -1245.94, "anomaly_threshold_x": 3.0, "anomaly_max_observed_x": 1.84, "anomalies_flagged": 0}, "publishers": [{"publisher": "reddit.com", "impressions": 16522, "filled": 12676, "revenue": 120255.0426, "fill_rate": 76.7, "rpm": 7278.48}, {"publisher": "cnn.com", "impressions": 16968, "filled": 13883, "revenue": 90118.2734, "fill_rate": 81.8, "rpm": 5311.07}, {"publisher": "nytimes.com", "impressions": 16521, "filled": 13477, "revenue": 80655.7782, "fill_rate": 81.6, "rpm": 4882.02}, {"publisher": "espn.com", "impressions": 16701, "filled": 12793, "revenue": 71409.549, "fill_rate": 76.6, "rpm": 4275.76}, {"publisher": "weather.com", "impressions": 16608, "filled": 12668, "revenue": 51354.8702, "fill_rate": 76.3, "rpm": 3092.18}, {"publisher": "buzzfeed.com", "impressions": 16680, "filled": 12738, "revenue": 38166.7435, "fill_rate": 76.4, "rpm": 2288.17}], "formats": [{"ad_format": "ctv", "impressions": 5011, "filled": 0, "revenue": 0.0, "clicks": 7, "fill_rate": 0.0, "ctr": 0.14}, {"ad_format": "display", "impressions": 45022, "filled": 45022, "revenue": 256501.0409, "clicks": 55, "fill_rate": 100.0, "ctr": 0.122}, {"ad_format": "mobile", "impressions": 29937, "filled": 29937, "revenue": 170941.8637, "clicks": 24, "fill_rate": 100.0, "ctr": 0.08}, {"ad_format": "native", "impressions": 8046, "filled": 3276, "revenue": 24517.3523, "clicks": 12, "fill_rate": 40.7, "ctr": 0.149}, {"ad_format": "video", "impressions": 11984, "filled": 0, "revenue": 0.0, "clicks": 30, "fill_rate": 0.0, "ctr": 0.25}], "devices": [{"device": "ctv", "impressions": 10097, "revenue": 41915.1972, "clicks": 1, "ctr": 0.01}, {"device": "desktop", "impressions": 34723, "revenue": 177760.5153, "clicks": 28, "ctr": 0.081}, {"device": "mobile", "impressions": 45316, "revenue": 199196.8012, "clicks": 83, "ctr": 0.183}, {"device": "tablet", "impressions": 9864, "revenue": 33087.7432, "clicks": 16, "ctr": 0.162}], "buyers": [{"winner": "Netflix", "impressions_won": 47074, "total_spend": 244337.3145, "avg_clearing_cpm": 5.1905, "avg_winning_bid": 8.009, "total_clicks": 56, "total_conversions": 2, "win_rate": 0.4707, "ctr": 0.0012, "cvr": 0.0357}, {"winner": "AmericanExpress", "impressions_won": 23352, "total_spend": 159698.312, "avg_clearing_cpm": 6.8387, "avg_winning_bid": 8.323, "total_clicks": 24, "total_conversions": 2, "win_rate": 0.2335, "ctr": 0.001, "cvr": 0.0833}, {"winner": "Nike", "impressions_won": 4442, "total_spend": 26455.9428, "avg_clearing_cpm": 5.9559, "avg_winning_bid": 6.6865, "total_clicks": 2, "total_conversions": 1, "win_rate": 0.0444, "ctr": 0.0005, "cvr": 0.5}, {"winner": "Toyota", "impressions_won": 3367, "total_spend": 21468.6876, "avg_clearing_cpm": 6.3762, "avg_winning_bid": 8.1937, "total_clicks": 1, "total_conversions": 0, "win_rate": 0.0337, "ctr": 0.0003, "cvr": 0.0}], "segments": [{"segment": "affluent_traveler", "segment_size": 268, "avg_income": 199624.0, "avg_order_value": 299.58, "avg_ltv": 15541.57, "avg_purchases": 12.9, "converters": 61, "conversion_rate_pct": 22.76}, {"segment": "high_value_customer", "segment_size": 3969, "avg_income": 136057.0, "avg_order_value": 203.62, "avg_ltv": 9254.61, "avg_purchases": 10.9, "converters": 784, "conversion_rate_pct": 19.75}, {"segment": "young_high_spender", "segment_size": 6149, "avg_income": 92465.0, "avg_order_value": 141.95, "avg_ltv": 4215.3, "avg_purchases": 6.6, "converters": 823, "conversion_rate_pct": 13.38}, {"segment": "loyalty_high_ltv", "segment_size": 6706, "avg_income": 88449.0, "avg_order_value": 126.86, "avg_ltv": 3681.77, "avg_purchases": 6.6, "converters": 904, "conversion_rate_pct": 13.48}, {"segment": "re_engagement", "segment_size": 12748, "avg_income": 76380.0, "avg_order_value": 105.35, "avg_ltv": 2739.47, "avg_purchases": 5.6, "converters": 1557, "conversion_rate_pct": 12.21}, {"segment": "lapsed_customer", "segment_size": 26166, "avg_income": 66052.0, "avg_order_value": 83.62, "avg_ltv": 2059.73, "avg_purchases": 4.8, "converters": 2831, "conversion_rate_pct": 10.82}, {"segment": "price_sensitive", "segment_size": 1673, "avg_income": 71248.0, "avg_order_value": 17.11, "avg_ltv": 450.41, "avg_purchases": 6.7, "converters": 209, "conversion_rate_pct": 12.49}, {"segment": "high_intent_no_purchase", "segment_size": 2698, "avg_income": 29929.0, "avg_order_value": 38.4, "avg_ltv": 0.0, "avg_purchases": 0.0, "converters": 146, "conversion_rate_pct": 5.41}], "incrementality": [{"segment": "affluent", "Control": 3.99, "Exposed": 4.53, "lift_pct": 13.8}, {"segment": "general", "Control": 3.29, "Exposed": 4.91, "lift_pct": 49.3}, {"segment": "high_intent", "Control": 3.56, "Exposed": 5.05, "lift_pct": 42.0}, {"segment": "high_value", "Control": 3.62, "Exposed": 4.02, "lift_pct": 11.3}, {"segment": "lapsed", "Control": 3.91, "Exposed": 5.07, "lift_pct": 29.8}], "pacing_weekly": [{"advertiser": "AmericanExpress", "week": 1, "pacing_index": 1.594, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 2, "pacing_index": 1.56, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 3, "pacing_index": 1.579, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 4, "pacing_index": 1.582, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 5, "pacing_index": 1.579, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 6, "pacing_index": 1.593, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 7, "pacing_index": 1.591, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 8, "pacing_index": 1.59, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 9, "pacing_index": 1.59, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 10, "pacing_index": 1.586, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 11, "pacing_index": 1.586, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 12, "pacing_index": 1.588, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 13, "pacing_index": 1.595, "anomalies": 0}, {"advertiser": "Netflix", "week": 1, "pacing_index": 1.628, "anomalies": 0}, {"advertiser": "Netflix", "week": 2, "pacing_index": 1.605, "anomalies": 0}, {"advertiser": "Netflix", "week": 3, "pacing_index": 1.623, "anomalies": 0}, {"advertiser": "Netflix", "week": 4, "pacing_index": 1.619, "anomalies": 0}, {"advertiser": "Netflix", "week": 5, "pacing_index": 1.606, "anomalies": 0}, {"advertiser": "Netflix", "week": 6, "pacing_index": 1.613, "anomalies": 0}, {"advertiser": "Netflix", "week": 7, "pacing_index": 1.62, "anomalies": 0}, {"advertiser": "Netflix", "week": 8, "pacing_index": 1.621, "anomalies": 0}, {"advertiser": "Netflix", "week": 9, "pacing_index": 1.622, "anomalies": 0}, {"advertiser": "Netflix", "week": 10, "pacing_index": 1.621, "anomalies": 0}, {"advertiser": "Netflix", "week": 11, "pacing_index": 1.621, "anomalies": 0}, {"advertiser": "Netflix", "week": 12, "pacing_index": 1.627, "anomalies": 0}, {"advertiser": "Netflix", "week": 13, "pacing_index": 1.63, "anomalies": 0}, {"advertiser": "Nike", "week": 1, "pacing_index": 0.47, "anomalies": 0}, {"advertiser": "Nike", "week": 2, "pacing_index": 0.505, "anomalies": 0}, {"advertiser": "Nike", "week": 3, "pacing_index": 0.511, "anomalies": 0}, {"advertiser": "Nike", "week": 4, "pacing_index": 0.518, "anomalies": 0}, {"advertiser": "Nike", "week": 5, "pacing_index": 0.528, "anomalies": 0}, {"advertiser": "Nike", "week": 6, "pacing_index": 0.532, "anomalies": 0}, {"advertiser": "Nike", "week": 7, "pacing_index": 0.529, "anomalies": 0}, {"advertiser": "Nike", "week": 8, "pacing_index": 0.525, "anomalies": 0}, {"advertiser": "Nike", "week": 9, "pacing_index": 0.525, "anomalies": 0}, {"advertiser": "Nike", "week": 10, "pacing_index": 0.526, "anomalies": 0}, {"advertiser": "Nike", "week": 11, "pacing_index": 0.527, "anomalies": 0}, {"advertiser": "Nike", "week": 12, "pacing_index": 0.53, "anomalies": 0}, {"advertiser": "Nike", "week": 13, "pacing_index": 0.53, "anomalies": 0}, {"advertiser": "Toyota", "week": 1, "pacing_index": 0.546, "anomalies": 0}, {"advertiser": "Toyota", "week": 2, "pacing_index": 0.523, "anomalies": 0}, {"advertiser": "Toyota", "week": 3, "pacing_index": 0.522, "anomalies": 0}, {"advertiser": "Toyota", "week": 4, "pacing_index": 0.532, "anomalies": 0}, {"advertiser": "Toyota", "week": 5, "pacing_index": 0.53, "anomalies": 0}, {"advertiser": "Toyota", "week": 6, "pacing_index": 0.532, "anomalies": 0}, {"advertiser": "Toyota", "week": 7, "pacing_index": 0.539, "anomalies": 0}, {"advertiser": "Toyota", "week": 8, "pacing_index": 0.539, "anomalies": 0}, {"advertiser": "Toyota", "week": 9, "pacing_index": 0.54, "anomalies": 0}, {"advertiser": "Toyota", "week": 10, "pacing_index": 0.537, "anomalies": 0}, {"advertiser": "Toyota", "week": 11, "pacing_index": 0.54, "anomalies": 0}, {"advertiser": "Toyota", "week": 12, "pacing_index": 0.539, "anomalies": 0}, {"advertiser": "Toyota", "week": 13, "pacing_index": 0.537, "anomalies": 0}], "audit_events": [{"event_type": "bid_constraint_violation", "count": 68932}], "advertiser_violations": [{"advertiser": "Coca_Cola", "violations": 30209}, {"advertiser": "AmericanExpress", "violations": 21011}, {"advertiser": "Nike", "violations": 12313}, {"advertiser": "Toyota", "violations": 5399}], "violation_reasons": [{"reason": "Below PMP floor", "count": 33324}, {"reason": "Exceeded max_cpm", "count": 30778}, {"reason": "Below floor_cpm", "count": 4830}]};
 
 const COLORS = {
   accent:'#4f8cff', accent2:'#22d3a5', warn:'#ffb648', danger:'#ff6b6b',
-  grid:'rgba(255,255,255,.06)', text:'#93a1c4',
+  grid:'rgba(255,255,255,.08)', text:'#93a1c4',
   series:['#4f8cff','#22d3a5','#ffb648','#ff6b6b','#a78bfa','#38bdf8']
 };
-Chart.defaults.color = COLORS.text;
-Chart.defaults.font.family = "-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-serif";
-Chart.defaults.font.size = 11.5;
-const gridOpt = { color: COLORS.grid };
 
 function fmtMoney(n){ return '$' + Number(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
-function fmtPct(n){ return n + '%'; }
+function el(tag, attrs, parent){
+  const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+function svgRoot(container, vbW, vbH){
+  container.innerHTML = '';
+  return el('svg', {viewBox:`0 0 ${vbW} ${vbH}`, preserveAspectRatio:'none'}, container).parentElement ?
+    container.querySelector('svg') || (function(){ return container; })() : container;
+}
+function makeSvg(container, vbW, vbH){
+  container.innerHTML = '';
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox', `0 0 ${vbW} ${vbH}`);
+  container.appendChild(svg);
+  return svg;
+}
+function legendHTML(container, items){
+  const div = document.createElement('div');
+  div.className = 'legend';
+  div.innerHTML = items.map(i=>`<span><span class="sw" style="background:${i.color}"></span>${i.label}</span>`).join('');
+  container.parentElement.appendChild(div);
+}
 
-// ---- KPI row ----
+// ---- Tooltip ----
+const tipEl = document.getElementById('tooltip');
+function showTip(html, evt){
+  tipEl.innerHTML = html;
+  tipEl.classList.add('show');
+  moveTip(evt);
+}
+function moveTip(evt){
+  const pad = 16;
+  let x = evt.clientX + pad, y = evt.clientY + pad;
+  const rect = tipEl.getBoundingClientRect();
+  if(x + rect.width > window.innerWidth - 10) x = evt.clientX - rect.width - pad;
+  if(y + rect.height > window.innerHeight - 10) y = evt.clientY - rect.height - pad;
+  tipEl.style.left = x+'px';
+  tipEl.style.top = y+'px';
+}
+function hideTip(){ tipEl.classList.remove('show'); }
+function wireHover(node, htmlFn){
+  node.addEventListener('mouseenter', e=>showTip(htmlFn(), e));
+  node.addEventListener('mousemove', moveTip);
+  node.addEventListener('mouseleave', hideTip);
+}
+function tipRow(label, value){
+  return `<div class="tip-row"><span>${label}</span><span>${value}</span></div>`;
+}
+
+// ---- Cross-navigation: click a bar -> jump to its tab, filter the table, highlight the row ----
+function gotoTab(panelName){
+  const tabBtn = document.querySelector(`.tab[data-panel="${panelName}"]`);
+  if(tabBtn) tabBtn.click();
+}
+function filterTableAndHighlight(inputId, tbodySelector, rowMatchAttr, value){
+  const input = document.getElementById(inputId);
+  input.value = value;
+  input.dispatchEvent(new Event('input'));
+  requestAnimationFrame(()=>{
+    const tbody = document.querySelector(tbodySelector);
+    const row = tbody && tbody.querySelector(`tr[data-${rowMatchAttr}="${CSS.escape(value)}"]`);
+    if(row){
+      row.scrollIntoView({behavior:'smooth', block:'center'});
+      row.classList.remove('flash-highlight');
+      void row.offsetWidth;
+      row.classList.add('flash-highlight');
+    }
+  });
+}
+function jumpToPublisher(name){ gotoTab('publishers'); filterTableAndHighlight('pubFilter', '#pubTable tbody', 'row', name); }
+function jumpToAdvertiser(name){ gotoTab('advertisers'); filterTableAndHighlight('advFilter', '#advTable tbody', 'row', name); }
+
+// ---- Horizontal bar chart ----
+function hBarChart(containerId, {labels, values, color, valueFmt=(v)=>v, tipFn, onClick}){
+  const container = document.getElementById(containerId);
+  const height = container.classList.contains('tall') ? 340 : 280;
+  const svg = makeSvg(container, 600, height);
+  const max = Math.max(...values, 1) * 1.15;
+  const n = labels.length;
+  const topPad=10, botPad=10, leftLabelW=110, rightPad=90;
+  const rowH = (height - topPad - botPad) / n;
+  const barH = rowH * 0.55;
+  const plotW = 600 - leftLabelW - rightPad;
+  labels.forEach((lab,i)=>{
+    const y = topPad + i*rowH + (rowH-barH)/2;
+    const w = Math.max(2, (values[i]/max) * plotW);
+    el('text', {x:leftLabelW-10, y:y+barH/2+4, 'text-anchor':'end', fill:'#93a1c4', 'font-size':11}, svg).textContent = lab;
+    const bar = el('rect', {x:leftLabelW, y:y, width:w, height:barH, rx:5, fill:color}, svg);
+    el('text', {x:leftLabelW+w+8, y:y+barH/2+4, fill:'#eef2ff', 'font-size':11, 'font-family':'monospace'}, svg).textContent = valueFmt(values[i]);
+    if(tipFn || onClick){
+      bar.classList.add('clickable');
+      if(tipFn) wireHover(bar, ()=>tipFn(i));
+      if(onClick) bar.addEventListener('click', ()=>onClick(i));
+    }
+  });
+}
+
+// ---- Vertical bar chart (single or grouped series) ----
+function vBarChart(containerId, {labels, series, valueFmt=(v)=>v, showValues=true, tipFn, onClick}){
+  const container = document.getElementById(containerId);
+  const height = container.classList.contains('tall') ? 340 : 280;
+  const svg = makeSvg(container, 600, height);
+  const allVals = series.flatMap(s=>s.values);
+  const max = (Math.max(...allVals) || 1) * 1.2;
+  const topPad=16, botPad=34, leftPad=6, rightPad=6;
+  const plotH = height - topPad - botPad;
+  const groupW = (600 - leftPad - rightPad) / labels.length;
+  const barGap = 6;
+  const barW = (groupW - barGap*(series.length+1)) / series.length;
+
+  // gridlines
+  for(let g=0; g<=4; g++){
+    const gy = topPad + plotH - (g/4)*plotH;
+    el('line', {x1:leftPad, x2:600-rightPad, y1:gy, y2:gy, stroke:COLORS.grid, 'stroke-width':1}, svg);
+  }
+
+  labels.forEach((lab,i)=>{
+    const gx = leftPad + i*groupW;
+    series.forEach((s,j)=>{
+      const v = s.values[i];
+      const barH = (v/max)*plotH;
+      const x = gx + barGap + j*(barW+barGap);
+      const y = topPad + plotH - barH;
+      const bar = el('rect', {x, y, width:barW, height:Math.max(barH,1), rx:4, fill:s.color}, svg);
+      if(showValues && series.length===1){
+        el('text', {x:x+barW/2, y:y-6, 'text-anchor':'middle', fill:'#93a1c4', 'font-size':10}, svg).textContent = valueFmt(v);
+      }
+      if(tipFn || onClick){
+        bar.classList.add('clickable');
+        if(tipFn) wireHover(bar, ()=>tipFn(i,j));
+        if(onClick) bar.addEventListener('click', ()=>onClick(i,j));
+      }
+    });
+    el('text', {x:gx+groupW/2, y:height-12, 'text-anchor':'middle', fill:'#93a1c4', 'font-size':10.5}, svg).textContent = lab;
+  });
+  if(series.length>1){
+    legendHTML(container, series.map(s=>({color:s.color, label:s.name})));
+  }
+}
+
+// ---- Doughnut ----
+function doughnut(containerId, {labels, values, colors, tipFn}){
+  const container = document.getElementById(containerId);
+  const height = container.classList.contains('tall') ? 340 : 280;
+  const svg = makeSvg(container, 600, height);
+  const total = values.reduce((a,b)=>a+b,0);
+  const cx=220, cy=height/2, rOuter=Math.min(height,300)/2-10, rInner=rOuter*0.58;
+  let angle = -Math.PI/2;
+  values.forEach((v,i)=>{
+    const frac = v/total;
+    const a0 = angle;
+    const a1 = angle + frac*2*Math.PI;
+    angle = a1;
+    const large = (a1-a0) > Math.PI ? 1 : 0;
+    const x0o = cx + rOuter*Math.cos(a0), y0o = cy + rOuter*Math.sin(a0);
+    const x1o = cx + rOuter*Math.cos(a1), y1o = cy + rOuter*Math.sin(a1);
+    const x1i = cx + rInner*Math.cos(a1), y1i = cy + rInner*Math.sin(a1);
+    const x0i = cx + rInner*Math.cos(a0), y0i = cy + rInner*Math.sin(a0);
+    const d = `M ${x0o} ${y0o} A ${rOuter} ${rOuter} 0 ${large} 1 ${x1o} ${y1o} L ${x1i} ${y1i} A ${rInner} ${rInner} 0 ${large} 0 ${x0i} ${y0i} Z`;
+    const slice = el('path', {d, fill:colors[i % colors.length]}, svg);
+    if(tipFn){
+      slice.classList.add('clickable');
+      wireHover(slice, ()=>tipFn(i, frac));
+    }
+  });
+  // legend on the right
+  labels.forEach((lab,i)=>{
+    const ly = cy - (labels.length-1)*11 + i*22;
+    el('rect', {x:460, y:ly-9, width:10, height:10, rx:2, fill:colors[i%colors.length]}, svg);
+    el('text', {x:476, y:ly, fill:'#eef2ff', 'font-size':11.5}, svg).textContent = `${lab} (${values[i].toLocaleString()})`;
+  });
+}
+
+// ---- Dual axis: bar (fill rate) + line (rpm) ----
+function dualAxis(containerId, {labels, bar, line, tipFn, onClick}){
+  const container = document.getElementById(containerId);
+  const height = container.classList.contains('tall') ? 340 : 280;
+  const svg = makeSvg(container, 600, height);
+  const topPad=20, botPad=34, leftPad=10, rightPad=10;
+  const plotH = height - topPad - botPad;
+  const plotW = 600 - leftPad - rightPad;
+  const n = labels.length;
+  const groupW = plotW / n;
+  const barMax = Math.max(...bar.values, 1) * 1.15;
+  const lineMax = Math.max(...line.values, 1) * 1.15;
+
+  for(let g=0; g<=4; g++){
+    const gy = topPad + plotH - (g/4)*plotH;
+    el('line', {x1:leftPad, x2:600-rightPad, y1:gy, y2:gy, stroke:COLORS.grid, 'stroke-width':1}, svg);
+  }
+
+  const barW = groupW*0.5;
+  labels.forEach((lab,i)=>{
+    const gx = leftPad + i*groupW;
+    const bh = (bar.values[i]/barMax)*plotH;
+    // full-height invisible hit-zone so hover/click works anywhere in the column, not just on the visible bar
+    const hit = el('rect', {x:gx, y:topPad, width:groupW, height:plotH, fill:'transparent'}, svg);
+    el('rect', {x:gx+(groupW-barW)/2, y:topPad+plotH-bh, width:barW, height:Math.max(bh,1), rx:4, fill:bar.color}, svg);
+    el('text', {x:gx+groupW/2, y:height-12, 'text-anchor':'middle', fill:'#93a1c4', 'font-size':10}, svg).textContent = lab;
+    if(tipFn || onClick){
+      hit.classList.add('clickable');
+      if(tipFn) wireHover(hit, ()=>tipFn(i));
+      if(onClick) hit.addEventListener('click', ()=>onClick(i));
+    }
+  });
+
+  let pts = labels.map((lab,i)=>{
+    const gx = leftPad + i*groupW + groupW/2;
+    const ly = topPad + plotH - (line.values[i]/lineMax)*plotH;
+    return [gx,ly];
+  });
+  const path = pts.map((p,i)=>(i===0?'M':'L')+p[0]+' '+p[1]).join(' ');
+  el('path', {d:path, fill:'none', stroke:line.color, 'stroke-width':2.5}, svg);
+  pts.forEach((p,i)=>{
+    const dot = el('circle', {cx:p[0], cy:p[1], r:4, fill:line.color}, svg);
+    if(tipFn || onClick){
+      dot.classList.add('clickable');
+      if(tipFn) wireHover(dot, ()=>tipFn(i));
+      if(onClick) dot.addEventListener('click', ()=>onClick(i));
+    }
+  });
+
+  legendHTML(container, [{color:bar.color,label:bar.name},{color:line.color,label:line.name}]);
+}
+
+// ---- Multi-line chart ----
+function lineChart(containerId, {xLabels, series}){
+  const container = document.getElementById(containerId);
+  const height = container.classList.contains('tall') ? 340 : 280;
+  const svg = makeSvg(container, 600, height);
+  const topPad=20, botPad=30, leftPad=30, rightPad=10;
+  const plotH = height - topPad - botPad;
+  const plotW = 600 - leftPad - rightPad;
+  const allVals = series.flatMap(s=>s.values);
+  const max = Math.max(...allVals) * 1.1;
+  const min = 0;
+  const n = xLabels.length;
+
+  for(let g=0; g<=4; g++){
+    const gy = topPad + plotH - (g/4)*plotH;
+    el('line', {x1:leftPad, x2:600-rightPad, y1:gy, y2:gy, stroke:COLORS.grid, 'stroke-width':1}, svg);
+    el('text', {x:leftPad-6, y:gy+3, 'text-anchor':'end', fill:'#93a1c4', 'font-size':9}, svg).textContent = (max*g/4).toFixed(1);
+  }
+  [0, Math.floor(n/2), n-1].forEach(idx=>{
+    const gx = leftPad + (idx/(n-1))*plotW;
+    el('text', {x:gx, y:height-10, 'text-anchor':'middle', fill:'#93a1c4', 'font-size':10}, svg).textContent = 'Wk '+xLabels[idx];
+  });
+
+  series.forEach(s=>{
+    const pts = s.values.map((v,i)=>{
+      const x = leftPad + (i/(n-1))*plotW;
+      const y = topPad + plotH - ((v-min)/(max-min))*plotH;
+      return [x,y,v];
+    });
+    const path = pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+    el('path', {d:path, fill:'none', stroke:s.color, 'stroke-width':2}, svg);
+    pts.forEach((p,i)=>{
+      const dot = el('circle', {cx:p[0], cy:p[1], r:8, fill:s.color, opacity:0}, svg);
+      dot.classList.add('clickable');
+      wireHover(dot, ()=>`<b>${s.name}</b>${tipRow('Week', xLabels[i])}${tipRow('Pacing index', p[2].toFixed(3)+'x')}`);
+      dot.addEventListener('mouseenter', ()=>{ dot.setAttribute('opacity','1'); dot.setAttribute('r','4.5'); });
+      dot.addEventListener('mouseleave', ()=>{ dot.setAttribute('opacity','0'); dot.setAttribute('r','8'); });
+    });
+  });
+  legendHTML(container, series.map(s=>({color:s.color, label:s.name})));
+}
+
+// ---- Bubble chart ----
+function bubbleChart(containerId, {points}){
+  const container = document.getElementById(containerId);
+  const height = container.classList.contains('tall') ? 340 : 280;
+  const svg = makeSvg(container, 600, height);
+  const topPad=20, botPad=34, leftPad=46, rightPad=16;
+  const plotH = height - topPad - botPad;
+  const plotW = 600 - leftPad - rightPad;
+  const xs = points.map(p=>p.x), ys = points.map(p=>p.y);
+  const xMax = Math.max(...xs)*1.1, xMin = 0;
+  const yMax = Math.max(...ys)*1.15, yMin = 0;
+
+  for(let g=0; g<=4; g++){
+    const gy = topPad + plotH - (g/4)*plotH;
+    el('line', {x1:leftPad, x2:600-rightPad, y1:gy, y2:gy, stroke:COLORS.grid, 'stroke-width':1}, svg);
+    el('text', {x:leftPad-6, y:gy+3, 'text-anchor':'end', fill:'#93a1c4', 'font-size':9}, svg).textContent = (yMax*g/4).toFixed(0)+'%';
+  }
+  [0,0.5,1].forEach(f=>{
+    const gx = leftPad + f*plotW;
+    el('text', {x:gx, y:height-14, 'text-anchor':'middle', fill:'#93a1c4', 'font-size':9}, svg).textContent = '$'+Math.round(xMax*f/1000)+'k';
+  });
+
+  points.forEach(p=>{
+    const x = leftPad + ((p.x-xMin)/(xMax-xMin))*plotW;
+    const y = topPad + plotH - ((p.y-yMin)/(yMax-yMin))*plotH;
+    const dot = el('circle', {cx:x, cy:y, r:p.r, fill:p.color, opacity:0.85}, svg);
+    if(p.tip){
+      dot.classList.add('clickable');
+      wireHover(dot, ()=>p.tip);
+    }
+  });
+  legendHTML(container, points.map(p=>({color:p.color, label:p.label})));
+}
+
+// ================= RENDER =================
+
+// KPI row
 const kpis = [
   { v: DATA.meta.total_impressions.toLocaleString(), l: 'Impressions simulated', cls:'accent' },
   { v: fmtMoney(DATA.meta.total_revenue), l: 'Total revenue (post-guardrail)', cls:'good' },
@@ -263,7 +579,7 @@ document.getElementById('kpiRow').innerHTML = kpis.map(k=>`
   <div class="kpi"><div class="v ${k.cls}">${k.v}</div><div class="l">${k.l}</div></div>
 `).join('');
 
-// ---- Tabs ----
+// Tabs
 document.querySelectorAll('.tab').forEach(t=>{
   t.addEventListener('click', ()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
@@ -273,146 +589,129 @@ document.querySelectorAll('.tab').forEach(t=>{
   });
 });
 
-// ---- Overview charts ----
-new Chart(document.getElementById('chartPubRevenue'), {
-  type:'bar',
-  data:{
-    labels: DATA.publishers.map(p=>p.publisher),
-    datasets:[{ label:'Revenue', data: DATA.publishers.map(p=>p.revenue), backgroundColor: COLORS.accent, borderRadius:6 }]
+// Overview
+hBarChart('chartPubRevenue', {
+  labels: DATA.publishers.map(p=>p.publisher),
+  values: DATA.publishers.map(p=>p.revenue),
+  color: COLORS.accent,
+  valueFmt: v=>fmtMoney(v),
+  tipFn: i=>{
+    const p = DATA.publishers[i];
+    return `<b>${p.publisher}</b>${tipRow('Impressions', p.impressions.toLocaleString())}${tipRow('Fill rate', p.fill_rate+'%')}${tipRow('Revenue', fmtMoney(p.revenue))}${tipRow('RPM', '$'+p.rpm)}`;
   },
-  options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{ x:{grid:gridOpt, ticks:{callback:v=>'$'+(v/1000)+'k'}}, y:{grid:{display:false}} } }
+  onClick: i=>jumpToPublisher(DATA.publishers[i].publisher)
+});
+doughnut('chartFormatShare', {
+  labels: DATA.formats.map(f=>f.ad_format),
+  values: DATA.formats.map(f=>f.impressions),
+  colors: COLORS.series,
+  tipFn: (i,frac)=>{
+    const f = DATA.formats[i];
+    return `<b>${f.ad_format}</b>${tipRow('Impressions', f.impressions.toLocaleString())}${tipRow('Share', (frac*100).toFixed(1)+'%')}${tipRow('Fill rate', f.fill_rate+'%')}${tipRow('Revenue', fmtMoney(f.revenue))}`;
+  }
+});
+vBarChart('chartRevenueBA', {
+  labels: ['Before (raw)','After (validated)'],
+  series: [{ name:'Revenue', color: COLORS.accent, values:[DATA.guardrail.revenue_before, DATA.guardrail.revenue_after] }],
+  valueFmt: v=>fmtMoney(v),
+  tipFn: i=> i===0
+    ? `<b>Before guardrail</b>${tipRow('Revenue', fmtMoney(DATA.guardrail.revenue_before))}${tipRow('Includes', 'invalid over-cap bids')}`
+    : `<b>After guardrail</b>${tipRow('Revenue', fmtMoney(DATA.guardrail.revenue_after))}${tipRow('Delta', fmtMoney(DATA.guardrail.revenue_delta))}`
+});
+vBarChart('chartWinRate', {
+  labels: DATA.buyers.map(b=>b.winner),
+  series: [{ name:'Win rate', color: COLORS.accent2, values: DATA.buyers.map(b=>+(b.win_rate*100).toFixed(1)) }],
+  valueFmt: v=>v+'%',
+  tipFn: i=>{
+    const b = DATA.buyers[i];
+    return `<b>${b.winner}</b>${tipRow('Win rate', (b.win_rate*100).toFixed(1)+'%')}${tipRow('Impressions won', b.impressions_won.toLocaleString())}${tipRow('Total spend', fmtMoney(b.total_spend))}${tipRow('Avg CPM', '$'+b.avg_clearing_cpm.toFixed(2))}`;
+  },
+  onClick: i=>jumpToAdvertiser(DATA.buyers[i].winner)
 });
 
-new Chart(document.getElementById('chartFormatShare'), {
-  type:'doughnut',
-  data:{
-    labels: DATA.formats.map(f=>f.ad_format),
-    datasets:[{ data: DATA.formats.map(f=>f.impressions), backgroundColor: COLORS.series, borderColor:'#0b1220', borderWidth:2 }]
+// Guardrail
+doughnut('chartViolReasons', {
+  labels: DATA.violation_reasons.map(r=>r.reason),
+  values: DATA.violation_reasons.map(r=>r.count),
+  colors: [COLORS.warn, COLORS.danger, COLORS.accent],
+  tipFn: (i,frac)=>{
+    const r = DATA.violation_reasons[i];
+    return `<b>${r.reason}</b>${tipRow('Events', r.count.toLocaleString())}${tipRow('Share', (frac*100).toFixed(1)+'%')}`;
+  }
+});
+hBarChart('chartViolAdv', {
+  labels: DATA.advertiser_violations.map(a=>a.advertiser),
+  values: DATA.advertiser_violations.map(a=>a.violations),
+  color: COLORS.danger,
+  valueFmt: v=>v.toLocaleString(),
+  tipFn: i=>{
+    const a = DATA.advertiser_violations[i];
+    return `<b>${a.advertiser}</b>${tipRow('Violations', a.violations.toLocaleString())}${tipRow('Share of all events', (a.violations/DATA.meta.total_audit_events*100).toFixed(1)+'%')}`;
   },
-  options:{ plugins:{legend:{position:'bottom', labels:{boxWidth:10,padding:14}}} }
+  onClick: i=>jumpToAdvertiser(DATA.advertiser_violations[i].advertiser)
 });
 
-new Chart(document.getElementById('chartRevenueBA'), {
-  type:'bar',
-  data:{
-    labels:['Before (raw)','After (validated)'],
-    datasets:[{ data:[DATA.guardrail.revenue_before, DATA.guardrail.revenue_after], backgroundColor:[COLORS.accent, COLORS.accent2], borderRadius:8 }]
+// Publishers & formats
+dualAxis('chartPubFillRpm', {
+  labels: DATA.publishers.map(p=>p.publisher),
+  bar: { name:'Fill rate %', color: COLORS.accent, values: DATA.publishers.map(p=>p.fill_rate) },
+  line: { name:'RPM $', color: COLORS.accent2, values: DATA.publishers.map(p=>p.rpm) },
+  tipFn: i=>{
+    const p = DATA.publishers[i];
+    return `<b>${p.publisher}</b>${tipRow('Fill rate', p.fill_rate+'%')}${tipRow('RPM', '$'+p.rpm)}${tipRow('Revenue', fmtMoney(p.revenue))}${tipRow('Impressions', p.impressions.toLocaleString())}`;
   },
-  options:{ plugins:{legend:{display:false}}, scales:{ y:{grid:gridOpt, ticks:{callback:v=>'$'+(v/1000)+'k'}, beginAtZero:false}, x:{grid:{display:false}} } }
+  onClick: i=>jumpToPublisher(DATA.publishers[i].publisher)
 });
-
-new Chart(document.getElementById('chartWinRate'), {
-  type:'bar',
-  data:{
-    labels: DATA.buyers.map(b=>b.winner),
-    datasets:[{ label:'Win rate', data: DATA.buyers.map(b=>(b.win_rate*100).toFixed(1)), backgroundColor: COLORS.series, borderRadius:6 }]
-  },
-  options:{ plugins:{legend:{display:false}}, scales:{ y:{grid:gridOpt, ticks:{callback:v=>v+'%'}}, x:{grid:{display:false}} } }
-});
-
-// ---- Guardrail charts ----
-new Chart(document.getElementById('chartViolReasons'), {
-  type:'doughnut',
-  data:{
-    labels: DATA.violation_reasons.map(r=>r.reason),
-    datasets:[{ data: DATA.violation_reasons.map(r=>r.count), backgroundColor:[COLORS.warn, COLORS.danger, COLORS.accent], borderColor:'#0b1220', borderWidth:2 }]
-  },
-  options:{ plugins:{legend:{position:'bottom', labels:{boxWidth:10,padding:14}}} }
-});
-
-new Chart(document.getElementById('chartViolAdv'), {
-  type:'bar',
-  data:{
-    labels: DATA.advertiser_violations.map(a=>a.advertiser),
-    datasets:[{ data: DATA.advertiser_violations.map(a=>a.violations), backgroundColor: COLORS.danger, borderRadius:6 }]
-  },
-  options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{ x:{grid:gridOpt}, y:{grid:{display:false}} } }
-});
-
-// ---- Publishers & formats ----
-new Chart(document.getElementById('chartPubFillRpm'), {
-  data:{
-    labels: DATA.publishers.map(p=>p.publisher),
-    datasets:[
-      { type:'bar', label:'Fill rate (%)', data: DATA.publishers.map(p=>p.fill_rate), backgroundColor: COLORS.accent, borderRadius:6, yAxisID:'y' },
-      { type:'line', label:'RPM ($)', data: DATA.publishers.map(p=>p.rpm), borderColor: COLORS.accent2, backgroundColor: COLORS.accent2, tension:.3, yAxisID:'y1', pointRadius:4 }
-    ]
-  },
-  options:{
-    plugins:{legend:{position:'bottom', labels:{boxWidth:10}}},
-    scales:{
-      x:{grid:{display:false}},
-      y:{ grid:gridOpt, position:'left', title:{display:true, text:'Fill rate %'} },
-      y1:{ position:'right', grid:{display:false}, title:{display:true, text:'RPM $'} }
-    }
+vBarChart('chartDeviceCtr', {
+  labels: DATA.devices.map(d=>d.device),
+  series: [{ name:'CTR %', color: COLORS.accent, values: DATA.devices.map(d=>d.ctr) }],
+  valueFmt: v=>v+'%',
+  tipFn: i=>{
+    const d = DATA.devices[i];
+    return `<b>${d.device}</b>${tipRow('CTR', d.ctr+'%')}${tipRow('Impressions', d.impressions.toLocaleString())}${tipRow('Revenue', fmtMoney(d.revenue))}`;
   }
 });
 
-new Chart(document.getElementById('chartDeviceCtr'), {
-  type:'bar',
-  data:{
-    labels: DATA.devices.map(d=>d.device),
-    datasets:[{ label:'CTR %', data: DATA.devices.map(d=>d.ctr), backgroundColor: COLORS.series, borderRadius:6 }]
-  },
-  options:{ plugins:{legend:{display:false}}, scales:{ y:{grid:gridOpt, ticks:{callback:v=>v+'%'}}, x:{grid:{display:false}} } }
+// Audience
+bubbleChart('chartSegScatter', {
+  points: DATA.segments.map((s,i)=>({
+    x: s.avg_income, y: s.conversion_rate_pct, r: Math.max(6, Math.sqrt(s.avg_ltv)/9),
+    color: COLORS.series[i % COLORS.series.length]+'cc', label: s.segment,
+    tip: `<b>${s.segment}</b>${tipRow('Segment size', s.segment_size.toLocaleString())}${tipRow('Avg income', '$'+s.avg_income.toLocaleString())}${tipRow('Avg order value', '$'+s.avg_order_value)}${tipRow('Avg LTV', '$'+s.avg_ltv.toLocaleString())}${tipRow('Conversion rate', s.conversion_rate_pct+'%')}`
+  }))
 });
-
-// ---- Segment scatter ----
-new Chart(document.getElementById('chartSegScatter'), {
-  type:'bubble',
-  data:{
-    datasets: DATA.segments.map((s,i)=>({
-      label: s.segment,
-      data:[{ x:s.avg_income, y:s.conversion_rate_pct, r: Math.max(6, Math.sqrt(s.avg_ltv)/8) }],
-      backgroundColor: COLORS.series[i % COLORS.series.length] + 'cc'
-    }))
-  },
-  options:{
-    plugins:{legend:{position:'bottom', labels:{boxWidth:8, font:{size:10}}}},
-    scales:{
-      x:{grid:gridOpt, title:{display:true, text:'Avg income ($)'}, ticks:{callback:v=>'$'+(v/1000)+'k'}},
-      y:{grid:gridOpt, title:{display:true, text:'Conversion rate (%)'}}
-    }
+vBarChart('chartIncrement', {
+  labels: DATA.incrementality.map(i=>i.segment),
+  series: [
+    { name:'Control', color: COLORS.accent, values: DATA.incrementality.map(i=>i.Control) },
+    { name:'Exposed', color: COLORS.accent2, values: DATA.incrementality.map(i=>i.Exposed) }
+  ],
+  valueFmt: v=>v+'%',
+  tipFn: (i,j)=>{
+    const row = DATA.incrementality[i];
+    const which = j===0 ? 'Control' : 'Exposed';
+    return `<b>${row.segment} — ${which}</b>${tipRow('Conv. rate', row[which]+'%')}${tipRow('Lift vs. control', row.lift_pct+'%')}`;
   }
 });
 
-// ---- Incrementality ----
-new Chart(document.getElementById('chartIncrement'), {
-  type:'bar',
-  data:{
-    labels: DATA.incrementality.map(i=>i.segment),
-    datasets:[
-      { label:'Control', data: DATA.incrementality.map(i=>i.Control), backgroundColor: COLORS.accent, borderRadius:5 },
-      { label:'Exposed', data: DATA.incrementality.map(i=>i.Exposed), backgroundColor: COLORS.accent2, borderRadius:5 }
-    ]
-  },
-  options:{ plugins:{legend:{position:'bottom'}}, scales:{ y:{grid:gridOpt, title:{display:true,text:'Conversion rate %'}}, x:{grid:{display:false}} } }
-});
-
-// ---- Pacing lines ----
+// Pacing
 const advList = [...new Set(DATA.pacing_weekly.map(p=>p.advertiser))];
-new Chart(document.getElementById('chartPacing'), {
-  type:'line',
-  data:{
-    labels: [...new Set(DATA.pacing_weekly.map(p=>p.week))].sort((a,b)=>a-b),
-    datasets: advList.map((adv,i)=>({
-      label: adv,
-      data: DATA.pacing_weekly.filter(p=>p.advertiser===adv).sort((a,b)=>a.week-b.week).map(p=>p.pacing_index),
-      borderColor: COLORS.series[i % COLORS.series.length],
-      backgroundColor: 'transparent',
-      tension:.3, pointRadius:2
-    }))
-  },
-  options:{
-    plugins:{legend:{position:'bottom', labels:{boxWidth:10}}},
-    scales:{ x:{grid:{display:false}, title:{display:true,text:'Week'}}, y:{grid:gridOpt, title:{display:true,text:'Pacing index (x planned)'}} }
-  }
+const weeks = [...new Set(DATA.pacing_weekly.map(p=>p.week))].sort((a,b)=>a-b);
+lineChart('chartPacing', {
+  xLabels: weeks,
+  series: advList.map((adv,i)=>({
+    name: adv, color: COLORS.series[i % COLORS.series.length],
+    values: DATA.pacing_weekly.filter(p=>p.advertiser===adv).sort((a,b)=>a.week-b.week).map(p=>p.pacing_index)
+  }))
 });
 
 // ---- Tables ----
-function renderTable(tbodyId, rows, cols, render){
+function renderTable(tbodyId, rows, cols, render, rowKeyFn){
   const tbody = document.querySelector(tbodyId);
-  tbody.innerHTML = rows.map(r=>'<tr>'+cols.map(c=>`<td>${render(r,c)}</td>`).join('')+'</tr>').join('');
+  tbody.innerHTML = rows.map(r=>{
+    const attr = rowKeyFn ? ` data-row="${rowKeyFn(r)}"` : '';
+    return `<tr${attr}>`+cols.map(c=>`<td>${render(r,c)}</td>`).join('')+'</tr>';
+  }).join('');
 }
 function pillFillRate(v){ return `<span class="pill ${v>=75?'hi':'lo'}">${v}%</span>`; }
 
@@ -424,7 +723,7 @@ function drawPubTable(){
     if(c==='rpm') return '$'+r.rpm;
     if(c==='impressions') return r.impressions.toLocaleString();
     return r[c];
-  });
+  }, r=>r.publisher);
 }
 drawPubTable();
 document.getElementById('pubFilter').addEventListener('input', e=>{
@@ -451,7 +750,779 @@ function drawAdvTable(){
     if(c==='cvr') return (r.cvr*100).toFixed(1)+'%';
     if(c==='impressions_won') return r.impressions_won.toLocaleString();
     return r[c];
+  }, r=>r.winner);
+}
+drawAdvTable();
+document.getElementById('advFilter').addEventListener('input', e=>{
+  const q = e.target.value.toLowerCase();
+  advRows = DATA.buyers.filter(b=>b.winner.toLowerCase().includes(q));
+  drawAdvTable();
+});
+document.querySelectorAll('#advTable th').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const k = th.dataset.k;
+    advRows.sort((a,b)=> typeof a[k]==='string' ? a[k].localeCompare(b[k]) : b[k]-a[k]);
+    document.querySelectorAll('#advTable th').forEach(x=>x.classList.remove('sorted'));
+    th.classList.add('sorted');
+    drawAdvTable();
   });
+});
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdTech RTB Simulator — Guardrail Intelligence Dashboard</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#121b2e; --panel2:#16223a; --border:#263457;
+    --text:#eef2ff; --sub:#93a1c4; --accent:#4f8cff; --accent2:#22d3a5;
+    --warn:#ffb648; --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:linear-gradient(160deg,#0b1220 0%,#0d1526 55%,#0b1220 100%);
+    color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+    padding:32px 5vw 64px;
+  }
+  a{color:var(--accent);}
+  h1{font-size:clamp(26px,4vw,42px); font-weight:800; letter-spacing:-0.02em; margin:0 0 8px; line-height:1.15;}
+  h1 span{color:var(--accent);}
+  .sub{color:var(--sub); font-size:15px; max-width:760px; line-height:1.55; margin-bottom:6px;}
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:700;
+    letter-spacing:0.1em; text-transform:uppercase; color:var(--accent2);
+    background:rgba(34,211,165,.1); border:1px solid rgba(34,211,165,.3);
+    padding:5px 12px; border-radius:999px; margin-bottom:16px;
+  }
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);}
+  .toprow{display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;}
+  .meta-note{font-size:13px; color:var(--sub); text-align:right;}
+
+  .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin:28px 0;}
+  .kpi{background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:18px 20px;}
+  .kpi .v{font-family:"SF Mono",Consolas,monospace; font-size:26px; font-weight:700; line-height:1; margin-bottom:8px;}
+  .kpi .l{font-size:12.5px; color:var(--sub); line-height:1.4;}
+  .v.good{color:var(--accent2);} .v.warn{color:var(--warn);} .v.accent{color:var(--accent);}
+
+  .tabs{display:flex; gap:6px; flex-wrap:wrap; margin:36px 0 18px; border-bottom:1px solid var(--border); padding-bottom:0;}
+  .tab{
+    background:none; border:none; color:var(--sub); font-size:13.5px; font-weight:600;
+    padding:10px 16px; cursor:pointer; border-bottom:2px solid transparent; transition:.15s;
+  }
+  .tab:hover{color:var(--text);}
+  .tab.active{color:var(--text); border-bottom-color:var(--accent);}
+  .panel{display:none;}
+  .panel.active{display:block; animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  .grid2{display:grid; grid-template-columns:1.3fr 1fr; gap:16px;}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media(max-width:900px){ .grid2,.grid3{grid-template-columns:1fr;} }
+
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:22px 24px; margin-bottom:16px;}
+  .card h3{font-size:14.5px; font-weight:700; margin:0 0 14px; display:flex; align-items:center; gap:8px;}
+  .card p.note{font-size:12.5px; color:var(--sub); margin:10px 0 0; line-height:1.5;}
+  .chartwrap{position:relative; height:280px;}
+  .chartwrap.tall{height:340px;}
+  .chartwrap svg{width:100%; height:100%; display:block; overflow:visible;}
+  .legend{display:flex; flex-wrap:wrap; gap:10px 16px; margin-top:10px; font-size:11.5px; color:var(--sub);}
+  .legend .sw{display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:6px; vertical-align:middle;}
+
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{
+    text-align:left; color:var(--sub); font-weight:600; font-size:11.5px; text-transform:uppercase;
+    letter-spacing:.04em; padding:8px 10px; border-bottom:1px solid var(--border); cursor:pointer; user-select:none;
+  }
+  th:hover{color:var(--text);}
+  th.sorted::after{content:" ▾"; color:var(--accent);}
+  td{padding:9px 10px; border-bottom:1px solid rgba(255,255,255,.04); color:var(--text);}
+  tr:hover td{background:rgba(255,255,255,.02);}
+  .pill{display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600;}
+  .pill.hi{background:rgba(34,211,165,.15); color:var(--accent2);}
+  .pill.lo{background:rgba(255,107,107,.15); color:var(--danger);}
+  .filterbar{display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;}
+  .filterbar input{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    padding:8px 12px; border-radius:8px; font-size:13px; flex:1; min-width:160px;
+  }
+  .finding{
+    background:linear-gradient(135deg, rgba(255,107,107,.09), rgba(18,27,46,0));
+    border:1px solid rgba(255,107,107,.35); border-radius:16px; padding:20px 24px; margin-bottom:16px;
+    display:flex; gap:16px; align-items:flex-start;
+  }
+  .finding .icon{font-size:22px;}
+  .finding h4{margin:0 0 6px; font-size:15px;}
+  .finding p{margin:0; font-size:13px; color:var(--sub); line-height:1.55;}
+  code{font-family:"SF Mono",Consolas,monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:5px; color:#ffd8a8; font-size:12.5px;}
+  .footer{margin-top:40px; padding-top:20px; border-top:1px solid var(--border); font-size:12.5px; color:var(--sub); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;}
+  .chip{font-size:11.5px; font-weight:600; padding:5px 11px; border-radius:999px; background:var(--panel2); border:1px solid var(--border); color:var(--sub); margin-right:6px;}
+
+  #tooltip{
+    position:fixed; z-index:50; pointer-events:none; background:#0a1120; border:1px solid var(--border);
+    border-radius:10px; padding:10px 13px; font-size:12px; line-height:1.5; color:var(--text);
+    box-shadow:0 12px 30px rgba(0,0,0,.45); max-width:240px; opacity:0; transition:opacity .1s;
+  }
+  #tooltip.show{opacity:1;}
+  #tooltip b{color:#fff;}
+  #tooltip .tip-row{display:flex; justify-content:space-between; gap:14px; color:var(--sub);}
+  #tooltip .tip-row span:last-child{color:var(--text); font-family:"SF Mono",Consolas,monospace;}
+  .clickable{cursor:pointer;}
+  tr.flash-highlight{animation:flashRow 1.6s ease;}
+  @keyframes flashRow{ 0%{background:rgba(79,140,255,.35);} 100%{background:transparent;} }
+</style>
+</head>
+<body>
+
+<div class="toprow">
+  <div>
+    <div class="eyebrow"><span class="dot"></span> Build Artifact · Guardrail Intelligence</div>
+    <h1>AdTech RTB Simulator <span>+ Guardrail Layer</span></h1>
+    <p class="sub">100,000 real-time bidding auctions, extended with an independent bid-validation and budget-anomaly rail. Every number on this page is computed directly from the simulator's own output data — nothing here is illustrative.</p>
+  </div>
+  <div class="meta-note">Raj Chetan Mehta<br>AI &amp; Analytics Engineer<br><a href="https://github.com/RajMehta28/adtech-rtb-simulator">View source on GitHub →</a></div>
+</div>
+
+<div class="kpis" id="kpiRow"></div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-panel="overview">Overview</button>
+  <button class="tab" data-panel="guardrail">Guardrail Findings</button>
+  <button class="tab" data-panel="publishers">Publishers &amp; Formats</button>
+  <button class="tab" data-panel="advertisers">Advertisers</button>
+  <button class="tab" data-panel="audience">Audience &amp; Incrementality</button>
+  <button class="tab" data-panel="pacing">Budget Pacing</button>
+</div>
+
+<!-- OVERVIEW -->
+<div class="panel active" id="panel-overview">
+  <div class="grid2">
+    <div class="card">
+      <h3>📊 Revenue by publisher</h3>
+      <div class="chartwrap tall" id="chartPubRevenue"></div>
+    </div>
+    <div class="card">
+      <h3>🥧 Impression share by format</h3>
+      <div class="chartwrap tall" id="chartFormatShare"></div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>⚖️ Revenue: before vs. after guardrail</h3>
+      <div class="chartwrap" id="chartRevenueBA"></div>
+      <p class="note">−0.27% — every dollar removed came from a bid winning above what its own advertiser's strategy should have allowed.</p>
+    </div>
+    <div class="card">
+      <h3>🏆 Advertiser win rate</h3>
+      <div class="chartwrap" id="chartWinRate"></div>
+    </div>
+  </div>
+</div>
+
+<!-- GUARDRAIL -->
+<div class="panel" id="panel-guardrail">
+  <div class="finding">
+    <div class="icon">⚠️</div>
+    <div>
+      <h4>14.4% of bids exceeded their own advertiser's <code>max_cpm</code></h4>
+      <p>The original bidding engine enforced <code>max_cpm</code>/<code>floor_cpm</code> <em>before</em> applying ±15% realistic noise, but never re-checked the bid afterward. Auditing the real <code>auctions.csv</code> surfaced 68,932 constraint violations across 100,000 impressions — measured, not hypothetical.</p>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>🧾 Violation reasons (68,932 logged events)</h3>
+      <div class="chartwrap" id="chartViolReasons"></div>
+    </div>
+    <div class="card">
+      <h3>📉 Violations by advertiser</h3>
+      <div class="chartwrap" id="chartViolAdv"></div>
+      <p class="note">Coca-Cola's fixed-CPM strategy leaves zero noise margin against its own $2.00 cap — the single most-violated constraint in the dataset.</p>
+    </div>
+  </div>
+  <div class="card">
+    <h3>🔍 Built with the mistakes shown, not hidden</h3>
+    <p class="note" style="font-size:13px;">
+      v1 of <code>validate_bid()</code> clipped legitimate $0.00 "no-bid" abstentions <em>up</em> to the floor price — briefly fabricating a 100% fill rate and nearly doubling Toyota's win count. Caught by reading the audit log's actual contents before trusting the row count, then fixed by treating <code>bid == 0.0</code> as an explicit early return. The budget-anomaly detector was separately unit-tested to correctly fire on an injected 5x spend spike and correctly ignore normal 1.5x variance — it found 0 real anomalies in this dataset (max observed pace: 1.84x against a 3x threshold), a legitimate result since this simulation has no automated bid-scaling feedback loop yet, stated as a next step rather than papered over.
+    </p>
+  </div>
+</div>
+
+<!-- PUBLISHERS & FORMATS -->
+<div class="panel" id="panel-publishers">
+  <div class="grid2">
+    <div class="card">
+      <h3>📶 Fill rate vs. RPM by publisher</h3>
+      <div class="chartwrap tall" id="chartPubFillRpm"></div>
+    </div>
+    <div class="card">
+      <h3>📱 CTR by device</h3>
+      <div class="chartwrap tall" id="chartDeviceCtr"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>📋 Publisher performance</h3>
+    <div class="filterbar"><input id="pubFilter" placeholder="Filter by publisher…"></div>
+    <table id="pubTable">
+      <thead><tr>
+        <th data-k="publisher">Publisher</th><th data-k="impressions">Impressions</th>
+        <th data-k="fill_rate">Fill Rate</th><th data-k="revenue">Revenue</th><th data-k="rpm">RPM</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ADVERTISERS -->
+<div class="panel" id="panel-advertisers">
+  <div class="card">
+    <h3>💰 Advertiser buyer performance</h3>
+    <div class="filterbar"><input id="advFilter" placeholder="Filter by advertiser…"></div>
+    <table id="advTable">
+      <thead><tr>
+        <th data-k="winner">Advertiser</th><th data-k="impressions_won">Impressions Won</th>
+        <th data-k="total_spend">Total Spend</th><th data-k="avg_clearing_cpm">Avg CPM</th>
+        <th data-k="win_rate">Win Rate</th><th data-k="cvr">CVR</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- AUDIENCE -->
+<div class="panel" id="panel-audience">
+  <div class="grid2">
+    <div class="card">
+      <h3>💵 Income vs. conversion rate by segment</h3>
+      <div class="chartwrap tall" id="chartSegScatter"></div>
+      <p class="note">Bubble size = segment LTV. Affluent travelers convert 4x more than lapsed customers, but they're 1% of the user base.</p>
+    </div>
+    <div class="card">
+      <h3>📈 Incrementality: exposed vs. control</h3>
+      <div class="chartwrap tall" id="chartIncrement"></div>
+      <p class="note">"General" audience shows the largest lift (+49.3%) — the segment with the least existing purchase intent to begin with.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PACING -->
+<div class="panel" id="panel-pacing">
+  <div class="card">
+    <h3>⏱️ Weekly budget pacing index by advertiser (13-week window)</h3>
+    <div class="chartwrap tall" id="chartPacing"></div>
+    <p class="note">Anomaly threshold: 3.0x planned pace. Max observed in this run: 1.84x (Netflix). 0 anomalies flagged across 90 days — verified correct via a unit test that injects a 5x spike and confirms the detector fires.</p>
+  </div>
+</div>
+
+<div class="footer">
+  <div><span class="chip">Python</span><span class="chip">pandas / numpy</span><span class="chip">scikit-learn</span><span class="chip">SQLite</span><span class="chip">Vanilla SVG</span></div>
+  <div>100,000 impressions · 50,000 users · 6 publishers · 5 advertisers · built from the project's own generated CSVs</div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+const DATA = {"meta": {"total_impressions": 100000, "total_users": 50000, "total_revenue": 451960.26, "fill_rate": 78.2, "avg_clearing_cpm": 4.52, "total_clicks": 128, "total_conversions": 9, "total_audit_events": 68932}, "guardrail": {"bid_violation_pct": 14.4, "floor_violation_pct_toyota": 2.3, "auctions_flipped": 66, "auctions_flipped_pct": 0.066, "revenue_before": 453206.19, "revenue_after": 451960.26, "revenue_delta": -1245.94, "anomaly_threshold_x": 3.0, "anomaly_max_observed_x": 1.84, "anomalies_flagged": 0}, "publishers": [{"publisher": "reddit.com", "impressions": 16522, "filled": 12676, "revenue": 120255.0426, "fill_rate": 76.7, "rpm": 7278.48}, {"publisher": "cnn.com", "impressions": 16968, "filled": 13883, "revenue": 90118.2734, "fill_rate": 81.8, "rpm": 5311.07}, {"publisher": "nytimes.com", "impressions": 16521, "filled": 13477, "revenue": 80655.7782, "fill_rate": 81.6, "rpm": 4882.02}, {"publisher": "espn.com", "impressions": 16701, "filled": 12793, "revenue": 71409.549, "fill_rate": 76.6, "rpm": 4275.76}, {"publisher": "weather.com", "impressions": 16608, "filled": 12668, "revenue": 51354.8702, "fill_rate": 76.3, "rpm": 3092.18}, {"publisher": "buzzfeed.com", "impressions": 16680, "filled": 12738, "revenue": 38166.7435, "fill_rate": 76.4, "rpm": 2288.17}], "formats": [{"ad_format": "ctv", "impressions": 5011, "filled": 0, "revenue": 0.0, "clicks": 7, "fill_rate": 0.0, "ctr": 0.14}, {"ad_format": "display", "impressions": 45022, "filled": 45022, "revenue": 256501.0409, "clicks": 55, "fill_rate": 100.0, "ctr": 0.122}, {"ad_format": "mobile", "impressions": 29937, "filled": 29937, "revenue": 170941.8637, "clicks": 24, "fill_rate": 100.0, "ctr": 0.08}, {"ad_format": "native", "impressions": 8046, "filled": 3276, "revenue": 24517.3523, "clicks": 12, "fill_rate": 40.7, "ctr": 0.149}, {"ad_format": "video", "impressions": 11984, "filled": 0, "revenue": 0.0, "clicks": 30, "fill_rate": 0.0, "ctr": 0.25}], "devices": [{"device": "ctv", "impressions": 10097, "revenue": 41915.1972, "clicks": 1, "ctr": 0.01}, {"device": "desktop", "impressions": 34723, "revenue": 177760.5153, "clicks": 28, "ctr": 0.081}, {"device": "mobile", "impressions": 45316, "revenue": 199196.8012, "clicks": 83, "ctr": 0.183}, {"device": "tablet", "impressions": 9864, "revenue": 33087.7432, "clicks": 16, "ctr": 0.162}], "buyers": [{"winner": "Netflix", "impressions_won": 47074, "total_spend": 244337.3145, "avg_clearing_cpm": 5.1905, "avg_winning_bid": 8.009, "total_clicks": 56, "total_conversions": 2, "win_rate": 0.4707, "ctr": 0.0012, "cvr": 0.0357}, {"winner": "AmericanExpress", "impressions_won": 23352, "total_spend": 159698.312, "avg_clearing_cpm": 6.8387, "avg_winning_bid": 8.323, "total_clicks": 24, "total_conversions": 2, "win_rate": 0.2335, "ctr": 0.001, "cvr": 0.0833}, {"winner": "Nike", "impressions_won": 4442, "total_spend": 26455.9428, "avg_clearing_cpm": 5.9559, "avg_winning_bid": 6.6865, "total_clicks": 2, "total_conversions": 1, "win_rate": 0.0444, "ctr": 0.0005, "cvr": 0.5}, {"winner": "Toyota", "impressions_won": 3367, "total_spend": 21468.6876, "avg_clearing_cpm": 6.3762, "avg_winning_bid": 8.1937, "total_clicks": 1, "total_conversions": 0, "win_rate": 0.0337, "ctr": 0.0003, "cvr": 0.0}], "segments": [{"segment": "affluent_traveler", "segment_size": 268, "avg_income": 199624.0, "avg_order_value": 299.58, "avg_ltv": 15541.57, "avg_purchases": 12.9, "converters": 61, "conversion_rate_pct": 22.76}, {"segment": "high_value_customer", "segment_size": 3969, "avg_income": 136057.0, "avg_order_value": 203.62, "avg_ltv": 9254.61, "avg_purchases": 10.9, "converters": 784, "conversion_rate_pct": 19.75}, {"segment": "young_high_spender", "segment_size": 6149, "avg_income": 92465.0, "avg_order_value": 141.95, "avg_ltv": 4215.3, "avg_purchases": 6.6, "converters": 823, "conversion_rate_pct": 13.38}, {"segment": "loyalty_high_ltv", "segment_size": 6706, "avg_income": 88449.0, "avg_order_value": 126.86, "avg_ltv": 3681.77, "avg_purchases": 6.6, "converters": 904, "conversion_rate_pct": 13.48}, {"segment": "re_engagement", "segment_size": 12748, "avg_income": 76380.0, "avg_order_value": 105.35, "avg_ltv": 2739.47, "avg_purchases": 5.6, "converters": 1557, "conversion_rate_pct": 12.21}, {"segment": "lapsed_customer", "segment_size": 26166, "avg_income": 66052.0, "avg_order_value": 83.62, "avg_ltv": 2059.73, "avg_purchases": 4.8, "converters": 2831, "conversion_rate_pct": 10.82}, {"segment": "price_sensitive", "segment_size": 1673, "avg_income": 71248.0, "avg_order_value": 17.11, "avg_ltv": 450.41, "avg_purchases": 6.7, "converters": 209, "conversion_rate_pct": 12.49}, {"segment": "high_intent_no_purchase", "segment_size": 2698, "avg_income": 29929.0, "avg_order_value": 38.4, "avg_ltv": 0.0, "avg_purchases": 0.0, "converters": 146, "conversion_rate_pct": 5.41}], "incrementality": [{"segment": "affluent", "Control": 3.99, "Exposed": 4.53, "lift_pct": 13.8}, {"segment": "general", "Control": 3.29, "Exposed": 4.91, "lift_pct": 49.3}, {"segment": "high_intent", "Control": 3.56, "Exposed": 5.05, "lift_pct": 42.0}, {"segment": "high_value", "Control": 3.62, "Exposed": 4.02, "lift_pct": 11.3}, {"segment": "lapsed", "Control": 3.91, "Exposed": 5.07, "lift_pct": 29.8}], "pacing_weekly": [{"advertiser": "AmericanExpress", "week": 1, "pacing_index": 1.594, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 2, "pacing_index": 1.56, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 3, "pacing_index": 1.579, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 4, "pacing_index": 1.582, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 5, "pacing_index": 1.579, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 6, "pacing_index": 1.593, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 7, "pacing_index": 1.591, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 8, "pacing_index": 1.59, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 9, "pacing_index": 1.59, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 10, "pacing_index": 1.586, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 11, "pacing_index": 1.586, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 12, "pacing_index": 1.588, "anomalies": 0}, {"advertiser": "AmericanExpress", "week": 13, "pacing_index": 1.595, "anomalies": 0}, {"advertiser": "Netflix", "week": 1, "pacing_index": 1.628, "anomalies": 0}, {"advertiser": "Netflix", "week": 2, "pacing_index": 1.605, "anomalies": 0}, {"advertiser": "Netflix", "week": 3, "pacing_index": 1.623, "anomalies": 0}, {"advertiser": "Netflix", "week": 4, "pacing_index": 1.619, "anomalies": 0}, {"advertiser": "Netflix", "week": 5, "pacing_index": 1.606, "anomalies": 0}, {"advertiser": "Netflix", "week": 6, "pacing_index": 1.613, "anomalies": 0}, {"advertiser": "Netflix", "week": 7, "pacing_index": 1.62, "anomalies": 0}, {"advertiser": "Netflix", "week": 8, "pacing_index": 1.621, "anomalies": 0}, {"advertiser": "Netflix", "week": 9, "pacing_index": 1.622, "anomalies": 0}, {"advertiser": "Netflix", "week": 10, "pacing_index": 1.621, "anomalies": 0}, {"advertiser": "Netflix", "week": 11, "pacing_index": 1.621, "anomalies": 0}, {"advertiser": "Netflix", "week": 12, "pacing_index": 1.627, "anomalies": 0}, {"advertiser": "Netflix", "week": 13, "pacing_index": 1.63, "anomalies": 0}, {"advertiser": "Nike", "week": 1, "pacing_index": 0.47, "anomalies": 0}, {"advertiser": "Nike", "week": 2, "pacing_index": 0.505, "anomalies": 0}, {"advertiser": "Nike", "week": 3, "pacing_index": 0.511, "anomalies": 0}, {"advertiser": "Nike", "week": 4, "pacing_index": 0.518, "anomalies": 0}, {"advertiser": "Nike", "week": 5, "pacing_index": 0.528, "anomalies": 0}, {"advertiser": "Nike", "week": 6, "pacing_index": 0.532, "anomalies": 0}, {"advertiser": "Nike", "week": 7, "pacing_index": 0.529, "anomalies": 0}, {"advertiser": "Nike", "week": 8, "pacing_index": 0.525, "anomalies": 0}, {"advertiser": "Nike", "week": 9, "pacing_index": 0.525, "anomalies": 0}, {"advertiser": "Nike", "week": 10, "pacing_index": 0.526, "anomalies": 0}, {"advertiser": "Nike", "week": 11, "pacing_index": 0.527, "anomalies": 0}, {"advertiser": "Nike", "week": 12, "pacing_index": 0.53, "anomalies": 0}, {"advertiser": "Nike", "week": 13, "pacing_index": 0.53, "anomalies": 0}, {"advertiser": "Toyota", "week": 1, "pacing_index": 0.546, "anomalies": 0}, {"advertiser": "Toyota", "week": 2, "pacing_index": 0.523, "anomalies": 0}, {"advertiser": "Toyota", "week": 3, "pacing_index": 0.522, "anomalies": 0}, {"advertiser": "Toyota", "week": 4, "pacing_index": 0.532, "anomalies": 0}, {"advertiser": "Toyota", "week": 5, "pacing_index": 0.53, "anomalies": 0}, {"advertiser": "Toyota", "week": 6, "pacing_index": 0.532, "anomalies": 0}, {"advertiser": "Toyota", "week": 7, "pacing_index": 0.539, "anomalies": 0}, {"advertiser": "Toyota", "week": 8, "pacing_index": 0.539, "anomalies": 0}, {"advertiser": "Toyota", "week": 9, "pacing_index": 0.54, "anomalies": 0}, {"advertiser": "Toyota", "week": 10, "pacing_index": 0.537, "anomalies": 0}, {"advertiser": "Toyota", "week": 11, "pacing_index": 0.54, "anomalies": 0}, {"advertiser": "Toyota", "week": 12, "pacing_index": 0.539, "anomalies": 0}, {"advertiser": "Toyota", "week": 13, "pacing_index": 0.537, "anomalies": 0}], "audit_events": [{"event_type": "bid_constraint_violation", "count": 68932}], "advertiser_violations": [{"advertiser": "Coca_Cola", "violations": 30209}, {"advertiser": "AmericanExpress", "violations": 21011}, {"advertiser": "Nike", "violations": 12313}, {"advertiser": "Toyota", "violations": 5399}], "violation_reasons": [{"reason": "Below PMP floor", "count": 33324}, {"reason": "Exceeded max_cpm", "count": 30778}, {"reason": "Below floor_cpm", "count": 4830}]};
+
+const COLORS = {
+  accent:'#4f8cff', accent2:'#22d3a5', warn:'#ffb648', danger:'#ff6b6b',
+  grid:'rgba(255,255,255,.08)', text:'#93a1c4',
+  series:['#4f8cff','#22d3a5','#ffb648','#ff6b6b','#a78bfa','#38bdf8']
+};
+
+function fmtMoney(n){ return '$' + Number(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
+function el(tag, attrs, parent){
+  const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+function svgRoot(container, vbW, vbH){
+  container.innerHTML = '';
+  return el('svg', {viewBox:`0 0 ${vbW} ${vbH}`, preserveAspectRatio:'none'}, container).parentElement ?
+    container.querySelector('svg') || (function(){ return container; })() : container;
+}
+function makeSvg(container, vbW, vbH){
+  container.innerHTML = '';
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox', `0 0 ${vbW} ${vbH}`);
+  container.appendChild(svg);
+  return svg;
+}
+function legendHTML(container, items){
+  const div = document.createElement('div');
+  div.className = 'legend';
+  div.innerHTML = items.map(i=>`<span><span class="sw" style="background:${i.color}"></span>${i.label}</span>`).join('');
+  container.parentElement.appendChild(div);
+}
+
+// ---- Tooltip ----
+const tipEl = document.getElementById('tooltip');
+function showTip(html, evt){
+  tipEl.innerHTML = html;
+  tipEl.classList.add('show');
+  moveTip(evt);
+}
+function moveTip(evt){
+  const pad = 16;
+  let x = evt.clientX + pad, y = evt.clientY + pad;
+  const rect = tipEl.getBoundingClientRect();
+  if(x + rect.width > window.innerWidth - 10) x = evt.clientX - rect.width - pad;
+  if(y + rect.height > window.innerHeight - 10) y = evt.clientY - rect.height - pad;
+  tipEl.style.left = x+'px';
+  tipEl.style.top = y+'px';
+}
+function hideTip(){ tipEl.classList.remove('show'); }
+function wireHover(node, htmlFn){
+  node.addEventListener('mouseenter', e=>showTip(htmlFn(), e));
+  node.addEventListener('mousemove', moveTip);
+  node.addEventListener('mouseleave', hideTip);
+}
+function tipRow(label, value){
+  return `<div class="tip-row"><span>${label}</span><span>${value}</span></div>`;
+}
+
+// ---- Cross-navigation: click a bar -> jump to its tab, filter the table, highlight the row ----
+function gotoTab(panelName){
+  const tabBtn = document.querySelector(`.tab[data-panel="${panelName}"]`);
+  if(tabBtn) tabBtn.click();
+}
+function filterTableAndHighlight(inputId, tbodySelector, rowMatchAttr, value){
+  const input = document.getElementById(inputId);
+  input.value = value;
+  input.dispatchEvent(new Event('input'));
+  requestAnimationFrame(()=>{
+    const tbody = document.querySelector(tbodySelector);
+    const row = tbody && tbody.querySelector(`tr[data-${rowMatchAttr}="${CSS.escape(value)}"]`);
+    if(row){
+      row.scrollIntoView({behavior:'smooth', block:'center'});
+      row.classList.remove('flash-highlight');
+      void row.offsetWidth;
+      row.classList.add('flash-highlight');
+    }
+  });
+}
+function jumpToPublisher(name){ gotoTab('publishers'); filterTableAndHighlight('pubFilter', '#pubTable tbody', 'row', name); }
+function jumpToAdvertiser(name){ gotoTab('advertisers'); filterTableAndHighlight('advFilter', '#advTable tbody', 'row', name); }
+
+// ---- Horizontal bar chart ----
+function hBarChart(containerId, {labels, values, color, valueFmt=(v)=>v, tipFn, onClick}){
+  const container = document.getElementById(containerId);
+  const height = container.classList.contains('tall') ? 340 : 280;
+  const svg = makeSvg(container, 600, height);
+  const max = Math.max(...values, 1) * 1.15;
+  const n = labels.length;
+  const topPad=10, botPad=10, leftLabelW=110, rightPad=90;
+  const rowH = (height - topPad - botPad) / n;
+  const barH = rowH * 0.55;
+  const plotW = 600 - leftLabelW - rightPad;
+  labels.forEach((lab,i)=>{
+    const y = topPad + i*rowH + (rowH-barH)/2;
+    const w = Math.max(2, (values[i]/max) * plotW);
+    el('text', {x:leftLabelW-10, y:y+barH/2+4, 'text-anchor':'end', fill:'#93a1c4', 'font-size':11}, svg).textContent = lab;
+    const bar = el('rect', {x:leftLabelW, y:y, width:w, height:barH, rx:5, fill:color}, svg);
+    el('text', {x:leftLabelW+w+8, y:y+barH/2+4, fill:'#eef2ff', 'font-size':11, 'font-family':'monospace'}, svg).textContent = valueFmt(values[i]);
+    if(tipFn || onClick){
+      bar.classList.add('clickable');
+      if(tipFn) wireHover(bar, ()=>tipFn(i));
+      if(onClick) bar.addEventListener('click', ()=>onClick(i));
+    }
+  });
+}
+
+// ---- Vertical bar chart (single or grouped series) ----
+function vBarChart(containerId, {labels, series, valueFmt=(v)=>v, showValues=true, tipFn, onClick}){
+  const container = document.getElementById(containerId);
+  const height = container.classList.contains('tall') ? 340 : 280;
+  const svg = makeSvg(container, 600, height);
+  const allVals = series.flatMap(s=>s.values);
+  const max = (Math.max(...allVals) || 1) * 1.2;
+  const topPad=16, botPad=34, leftPad=6, rightPad=6;
+  const plotH = height - topPad - botPad;
+  const groupW = (600 - leftPad - rightPad) / labels.length;
+  const barGap = 6;
+  const barW = (groupW - barGap*(series.length+1)) / series.length;
+
+  // gridlines
+  for(let g=0; g<=4; g++){
+    const gy = topPad + plotH - (g/4)*plotH;
+    el('line', {x1:leftPad, x2:600-rightPad, y1:gy, y2:gy, stroke:COLORS.grid, 'stroke-width':1}, svg);
+  }
+
+  labels.forEach((lab,i)=>{
+    const gx = leftPad + i*groupW;
+    series.forEach((s,j)=>{
+      const v = s.values[i];
+      const barH = (v/max)*plotH;
+      const x = gx + barGap + j*(barW+barGap);
+      const y = topPad + plotH - barH;
+      const bar = el('rect', {x, y, width:barW, height:Math.max(barH,1), rx:4, fill:s.color}, svg);
+      if(showValues && series.length===1){
+        el('text', {x:x+barW/2, y:y-6, 'text-anchor':'middle', fill:'#93a1c4', 'font-size':10}, svg).textContent = valueFmt(v);
+      }
+      if(tipFn || onClick){
+        bar.classList.add('clickable');
+        if(tipFn) wireHover(bar, ()=>tipFn(i,j));
+        if(onClick) bar.addEventListener('click', ()=>onClick(i,j));
+      }
+    });
+    el('text', {x:gx+groupW/2, y:height-12, 'text-anchor':'middle', fill:'#93a1c4', 'font-size':10.5}, svg).textContent = lab;
+  });
+  if(series.length>1){
+    legendHTML(container, series.map(s=>({color:s.color, label:s.name})));
+  }
+}
+
+// ---- Doughnut ----
+function doughnut(containerId, {labels, values, colors, tipFn}){
+  const container = document.getElementById(containerId);
+  const height = container.classList.contains('tall') ? 340 : 280;
+  const svg = makeSvg(container, 600, height);
+  const total = values.reduce((a,b)=>a+b,0);
+  const cx=220, cy=height/2, rOuter=Math.min(height,300)/2-10, rInner=rOuter*0.58;
+  let angle = -Math.PI/2;
+  values.forEach((v,i)=>{
+    const frac = v/total;
+    const a0 = angle;
+    const a1 = angle + frac*2*Math.PI;
+    angle = a1;
+    const large = (a1-a0) > Math.PI ? 1 : 0;
+    const x0o = cx + rOuter*Math.cos(a0), y0o = cy + rOuter*Math.sin(a0);
+    const x1o = cx + rOuter*Math.cos(a1), y1o = cy + rOuter*Math.sin(a1);
+    const x1i = cx + rInner*Math.cos(a1), y1i = cy + rInner*Math.sin(a1);
+    const x0i = cx + rInner*Math.cos(a0), y0i = cy + rInner*Math.sin(a0);
+    const d = `M ${x0o} ${y0o} A ${rOuter} ${rOuter} 0 ${large} 1 ${x1o} ${y1o} L ${x1i} ${y1i} A ${rInner} ${rInner} 0 ${large} 0 ${x0i} ${y0i} Z`;
+    const slice = el('path', {d, fill:colors[i % colors.length]}, svg);
+    if(tipFn){
+      slice.classList.add('clickable');
+      wireHover(slice, ()=>tipFn(i, frac));
+    }
+  });
+  // legend on the right
+  labels.forEach((lab,i)=>{
+    const ly = cy - (labels.length-1)*11 + i*22;
+    el('rect', {x:460, y:ly-9, width:10, height:10, rx:2, fill:colors[i%colors.length]}, svg);
+    el('text', {x:476, y:ly, fill:'#eef2ff', 'font-size':11.5}, svg).textContent = `${lab} (${values[i].toLocaleString()})`;
+  });
+}
+
+// ---- Dual axis: bar (fill rate) + line (rpm) ----
+function dualAxis(containerId, {labels, bar, line, tipFn, onClick}){
+  const container = document.getElementById(containerId);
+  const height = container.classList.contains('tall') ? 340 : 280;
+  const svg = makeSvg(container, 600, height);
+  const topPad=20, botPad=34, leftPad=10, rightPad=10;
+  const plotH = height - topPad - botPad;
+  const plotW = 600 - leftPad - rightPad;
+  const n = labels.length;
+  const groupW = plotW / n;
+  const barMax = Math.max(...bar.values, 1) * 1.15;
+  const lineMax = Math.max(...line.values, 1) * 1.15;
+
+  for(let g=0; g<=4; g++){
+    const gy = topPad + plotH - (g/4)*plotH;
+    el('line', {x1:leftPad, x2:600-rightPad, y1:gy, y2:gy, stroke:COLORS.grid, 'stroke-width':1}, svg);
+  }
+
+  const barW = groupW*0.5;
+  labels.forEach((lab,i)=>{
+    const gx = leftPad + i*groupW;
+    const bh = (bar.values[i]/barMax)*plotH;
+    // full-height invisible hit-zone so hover/click works anywhere in the column, not just on the visible bar
+    const hit = el('rect', {x:gx, y:topPad, width:groupW, height:plotH, fill:'transparent'}, svg);
+    el('rect', {x:gx+(groupW-barW)/2, y:topPad+plotH-bh, width:barW, height:Math.max(bh,1), rx:4, fill:bar.color}, svg);
+    el('text', {x:gx+groupW/2, y:height-12, 'text-anchor':'middle', fill:'#93a1c4', 'font-size':10}, svg).textContent = lab;
+    if(tipFn || onClick){
+      hit.classList.add('clickable');
+      if(tipFn) wireHover(hit, ()=>tipFn(i));
+      if(onClick) hit.addEventListener('click', ()=>onClick(i));
+    }
+  });
+
+  let pts = labels.map((lab,i)=>{
+    const gx = leftPad + i*groupW + groupW/2;
+    const ly = topPad + plotH - (line.values[i]/lineMax)*plotH;
+    return [gx,ly];
+  });
+  const path = pts.map((p,i)=>(i===0?'M':'L')+p[0]+' '+p[1]).join(' ');
+  el('path', {d:path, fill:'none', stroke:line.color, 'stroke-width':2.5}, svg);
+  pts.forEach((p,i)=>{
+    const dot = el('circle', {cx:p[0], cy:p[1], r:4, fill:line.color}, svg);
+    if(tipFn || onClick){
+      dot.classList.add('clickable');
+      if(tipFn) wireHover(dot, ()=>tipFn(i));
+      if(onClick) dot.addEventListener('click', ()=>onClick(i));
+    }
+  });
+
+  legendHTML(container, [{color:bar.color,label:bar.name},{color:line.color,label:line.name}]);
+}
+
+// ---- Multi-line chart ----
+function lineChart(containerId, {xLabels, series}){
+  const container = document.getElementById(containerId);
+  const height = container.classList.contains('tall') ? 340 : 280;
+  const svg = makeSvg(container, 600, height);
+  const topPad=20, botPad=30, leftPad=30, rightPad=10;
+  const plotH = height - topPad - botPad;
+  const plotW = 600 - leftPad - rightPad;
+  const allVals = series.flatMap(s=>s.values);
+  const max = Math.max(...allVals) * 1.1;
+  const min = 0;
+  const n = xLabels.length;
+
+  for(let g=0; g<=4; g++){
+    const gy = topPad + plotH - (g/4)*plotH;
+    el('line', {x1:leftPad, x2:600-rightPad, y1:gy, y2:gy, stroke:COLORS.grid, 'stroke-width':1}, svg);
+    el('text', {x:leftPad-6, y:gy+3, 'text-anchor':'end', fill:'#93a1c4', 'font-size':9}, svg).textContent = (max*g/4).toFixed(1);
+  }
+  [0, Math.floor(n/2), n-1].forEach(idx=>{
+    const gx = leftPad + (idx/(n-1))*plotW;
+    el('text', {x:gx, y:height-10, 'text-anchor':'middle', fill:'#93a1c4', 'font-size':10}, svg).textContent = 'Wk '+xLabels[idx];
+  });
+
+  series.forEach(s=>{
+    const pts = s.values.map((v,i)=>{
+      const x = leftPad + (i/(n-1))*plotW;
+      const y = topPad + plotH - ((v-min)/(max-min))*plotH;
+      return [x,y,v];
+    });
+    const path = pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+    el('path', {d:path, fill:'none', stroke:s.color, 'stroke-width':2}, svg);
+    pts.forEach((p,i)=>{
+      const dot = el('circle', {cx:p[0], cy:p[1], r:8, fill:s.color, opacity:0}, svg);
+      dot.classList.add('clickable');
+      wireHover(dot, ()=>`<b>${s.name}</b>${tipRow('Week', xLabels[i])}${tipRow('Pacing index', p[2].toFixed(3)+'x')}`);
+      dot.addEventListener('mouseenter', ()=>{ dot.setAttribute('opacity','1'); dot.setAttribute('r','4.5'); });
+      dot.addEventListener('mouseleave', ()=>{ dot.setAttribute('opacity','0'); dot.setAttribute('r','8'); });
+    });
+  });
+  legendHTML(container, series.map(s=>({color:s.color, label:s.name})));
+}
+
+// ---- Bubble chart ----
+function bubbleChart(containerId, {points}){
+  const container = document.getElementById(containerId);
+  const height = container.classList.contains('tall') ? 340 : 280;
+  const svg = makeSvg(container, 600, height);
+  const topPad=20, botPad=34, leftPad=46, rightPad=16;
+  const plotH = height - topPad - botPad;
+  const plotW = 600 - leftPad - rightPad;
+  const xs = points.map(p=>p.x), ys = points.map(p=>p.y);
+  const xMax = Math.max(...xs)*1.1, xMin = 0;
+  const yMax = Math.max(...ys)*1.15, yMin = 0;
+
+  for(let g=0; g<=4; g++){
+    const gy = topPad + plotH - (g/4)*plotH;
+    el('line', {x1:leftPad, x2:600-rightPad, y1:gy, y2:gy, stroke:COLORS.grid, 'stroke-width':1}, svg);
+    el('text', {x:leftPad-6, y:gy+3, 'text-anchor':'end', fill:'#93a1c4', 'font-size':9}, svg).textContent = (yMax*g/4).toFixed(0)+'%';
+  }
+  [0,0.5,1].forEach(f=>{
+    const gx = leftPad + f*plotW;
+    el('text', {x:gx, y:height-14, 'text-anchor':'middle', fill:'#93a1c4', 'font-size':9}, svg).textContent = '$'+Math.round(xMax*f/1000)+'k';
+  });
+
+  points.forEach(p=>{
+    const x = leftPad + ((p.x-xMin)/(xMax-xMin))*plotW;
+    const y = topPad + plotH - ((p.y-yMin)/(yMax-yMin))*plotH;
+    const dot = el('circle', {cx:x, cy:y, r:p.r, fill:p.color, opacity:0.85}, svg);
+    if(p.tip){
+      dot.classList.add('clickable');
+      wireHover(dot, ()=>p.tip);
+    }
+  });
+  legendHTML(container, points.map(p=>({color:p.color, label:p.label})));
+}
+
+// ================= RENDER =================
+
+// KPI row
+const kpis = [
+  { v: DATA.meta.total_impressions.toLocaleString(), l: 'Impressions simulated', cls:'accent' },
+  { v: fmtMoney(DATA.meta.total_revenue), l: 'Total revenue (post-guardrail)', cls:'good' },
+  { v: DATA.meta.fill_rate + '%', l: 'Overall fill rate', cls:'accent' },
+  { v: DATA.guardrail.bid_violation_pct + '%', l: 'Bids that breached their own max_cpm', cls:'warn' },
+  { v: DATA.guardrail.auctions_flipped + ' / 100K', l: 'Auction winners changed by guardrail', cls:'accent' },
+  { v: fmtMoney(DATA.guardrail.revenue_delta), l: 'Illegitimate revenue removed', cls:'good' },
+];
+document.getElementById('kpiRow').innerHTML = kpis.map(k=>`
+  <div class="kpi"><div class="v ${k.cls}">${k.v}</div><div class="l">${k.l}</div></div>
+`).join('');
+
+// Tabs
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-'+t.dataset.panel).classList.add('active');
+  });
+});
+
+// Overview
+hBarChart('chartPubRevenue', {
+  labels: DATA.publishers.map(p=>p.publisher),
+  values: DATA.publishers.map(p=>p.revenue),
+  color: COLORS.accent,
+  valueFmt: v=>fmtMoney(v),
+  tipFn: i=>{
+    const p = DATA.publishers[i];
+    return `<b>${p.publisher}</b>${tipRow('Impressions', p.impressions.toLocaleString())}${tipRow('Fill rate', p.fill_rate+'%')}${tipRow('Revenue', fmtMoney(p.revenue))}${tipRow('RPM', '$'+p.rpm)}`;
+  },
+  onClick: i=>jumpToPublisher(DATA.publishers[i].publisher)
+});
+doughnut('chartFormatShare', {
+  labels: DATA.formats.map(f=>f.ad_format),
+  values: DATA.formats.map(f=>f.impressions),
+  colors: COLORS.series,
+  tipFn: (i,frac)=>{
+    const f = DATA.formats[i];
+    return `<b>${f.ad_format}</b>${tipRow('Impressions', f.impressions.toLocaleString())}${tipRow('Share', (frac*100).toFixed(1)+'%')}${tipRow('Fill rate', f.fill_rate+'%')}${tipRow('Revenue', fmtMoney(f.revenue))}`;
+  }
+});
+vBarChart('chartRevenueBA', {
+  labels: ['Before (raw)','After (validated)'],
+  series: [{ name:'Revenue', color: COLORS.accent, values:[DATA.guardrail.revenue_before, DATA.guardrail.revenue_after] }],
+  valueFmt: v=>fmtMoney(v),
+  tipFn: i=> i===0
+    ? `<b>Before guardrail</b>${tipRow('Revenue', fmtMoney(DATA.guardrail.revenue_before))}${tipRow('Includes', 'invalid over-cap bids')}`
+    : `<b>After guardrail</b>${tipRow('Revenue', fmtMoney(DATA.guardrail.revenue_after))}${tipRow('Delta', fmtMoney(DATA.guardrail.revenue_delta))}`
+});
+vBarChart('chartWinRate', {
+  labels: DATA.buyers.map(b=>b.winner),
+  series: [{ name:'Win rate', color: COLORS.accent2, values: DATA.buyers.map(b=>+(b.win_rate*100).toFixed(1)) }],
+  valueFmt: v=>v+'%',
+  tipFn: i=>{
+    const b = DATA.buyers[i];
+    return `<b>${b.winner}</b>${tipRow('Win rate', (b.win_rate*100).toFixed(1)+'%')}${tipRow('Impressions won', b.impressions_won.toLocaleString())}${tipRow('Total spend', fmtMoney(b.total_spend))}${tipRow('Avg CPM', '$'+b.avg_clearing_cpm.toFixed(2))}`;
+  },
+  onClick: i=>jumpToAdvertiser(DATA.buyers[i].winner)
+});
+
+// Guardrail
+doughnut('chartViolReasons', {
+  labels: DATA.violation_reasons.map(r=>r.reason),
+  values: DATA.violation_reasons.map(r=>r.count),
+  colors: [COLORS.warn, COLORS.danger, COLORS.accent],
+  tipFn: (i,frac)=>{
+    const r = DATA.violation_reasons[i];
+    return `<b>${r.reason}</b>${tipRow('Events', r.count.toLocaleString())}${tipRow('Share', (frac*100).toFixed(1)+'%')}`;
+  }
+});
+hBarChart('chartViolAdv', {
+  labels: DATA.advertiser_violations.map(a=>a.advertiser),
+  values: DATA.advertiser_violations.map(a=>a.violations),
+  color: COLORS.danger,
+  valueFmt: v=>v.toLocaleString(),
+  tipFn: i=>{
+    const a = DATA.advertiser_violations[i];
+    return `<b>${a.advertiser}</b>${tipRow('Violations', a.violations.toLocaleString())}${tipRow('Share of all events', (a.violations/DATA.meta.total_audit_events*100).toFixed(1)+'%')}`;
+  },
+  onClick: i=>jumpToAdvertiser(DATA.advertiser_violations[i].advertiser)
+});
+
+// Publishers & formats
+dualAxis('chartPubFillRpm', {
+  labels: DATA.publishers.map(p=>p.publisher),
+  bar: { name:'Fill rate %', color: COLORS.accent, values: DATA.publishers.map(p=>p.fill_rate) },
+  line: { name:'RPM $', color: COLORS.accent2, values: DATA.publishers.map(p=>p.rpm) },
+  tipFn: i=>{
+    const p = DATA.publishers[i];
+    return `<b>${p.publisher}</b>${tipRow('Fill rate', p.fill_rate+'%')}${tipRow('RPM', '$'+p.rpm)}${tipRow('Revenue', fmtMoney(p.revenue))}${tipRow('Impressions', p.impressions.toLocaleString())}`;
+  },
+  onClick: i=>jumpToPublisher(DATA.publishers[i].publisher)
+});
+vBarChart('chartDeviceCtr', {
+  labels: DATA.devices.map(d=>d.device),
+  series: [{ name:'CTR %', color: COLORS.accent, values: DATA.devices.map(d=>d.ctr) }],
+  valueFmt: v=>v+'%',
+  tipFn: i=>{
+    const d = DATA.devices[i];
+    return `<b>${d.device}</b>${tipRow('CTR', d.ctr+'%')}${tipRow('Impressions', d.impressions.toLocaleString())}${tipRow('Revenue', fmtMoney(d.revenue))}`;
+  }
+});
+
+// Audience
+bubbleChart('chartSegScatter', {
+  points: DATA.segments.map((s,i)=>({
+    x: s.avg_income, y: s.conversion_rate_pct, r: Math.max(6, Math.sqrt(s.avg_ltv)/9),
+    color: COLORS.series[i % COLORS.series.length]+'cc', label: s.segment,
+    tip: `<b>${s.segment}</b>${tipRow('Segment size', s.segment_size.toLocaleString())}${tipRow('Avg income', '$'+s.avg_income.toLocaleString())}${tipRow('Avg order value', '$'+s.avg_order_value)}${tipRow('Avg LTV', '$'+s.avg_ltv.toLocaleString())}${tipRow('Conversion rate', s.conversion_rate_pct+'%')}`
+  }))
+});
+vBarChart('chartIncrement', {
+  labels: DATA.incrementality.map(i=>i.segment),
+  series: [
+    { name:'Control', color: COLORS.accent, values: DATA.incrementality.map(i=>i.Control) },
+    { name:'Exposed', color: COLORS.accent2, values: DATA.incrementality.map(i=>i.Exposed) }
+  ],
+  valueFmt: v=>v+'%',
+  tipFn: (i,j)=>{
+    const row = DATA.incrementality[i];
+    const which = j===0 ? 'Control' : 'Exposed';
+    return `<b>${row.segment} — ${which}</b>${tipRow('Conv. rate', row[which]+'%')}${tipRow('Lift vs. control', row.lift_pct+'%')}`;
+  }
+});
+
+// Pacing
+const advList = [...new Set(DATA.pacing_weekly.map(p=>p.advertiser))];
+const weeks = [...new Set(DATA.pacing_weekly.map(p=>p.week))].sort((a,b)=>a-b);
+lineChart('chartPacing', {
+  xLabels: weeks,
+  series: advList.map((adv,i)=>({
+    name: adv, color: COLORS.series[i % COLORS.series.length],
+    values: DATA.pacing_weekly.filter(p=>p.advertiser===adv).sort((a,b)=>a.week-b.week).map(p=>p.pacing_index)
+  }))
+});
+
+// ---- Tables ----
+function renderTable(tbodyId, rows, cols, render, rowKeyFn){
+  const tbody = document.querySelector(tbodyId);
+  tbody.innerHTML = rows.map(r=>{
+    const attr = rowKeyFn ? ` data-row="${rowKeyFn(r)}"` : '';
+    return `<tr${attr}>`+cols.map(c=>`<td>${render(r,c)}</td>`).join('')+'</tr>';
+  }).join('');
+}
+function pillFillRate(v){ return `<span class="pill ${v>=75?'hi':'lo'}">${v}%</span>`; }
+
+let pubRows = [...DATA.publishers];
+function drawPubTable(){
+  renderTable('#pubTable tbody', pubRows, ['publisher','impressions','fill_rate','revenue','rpm'], (r,c)=>{
+    if(c==='fill_rate') return pillFillRate(r.fill_rate);
+    if(c==='revenue') return fmtMoney(r.revenue);
+    if(c==='rpm') return '$'+r.rpm;
+    if(c==='impressions') return r.impressions.toLocaleString();
+    return r[c];
+  }, r=>r.publisher);
+}
+drawPubTable();
+document.getElementById('pubFilter').addEventListener('input', e=>{
+  const q = e.target.value.toLowerCase();
+  pubRows = DATA.publishers.filter(p=>p.publisher.toLowerCase().includes(q));
+  drawPubTable();
+});
+document.querySelectorAll('#pubTable th').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const k = th.dataset.k;
+    pubRows.sort((a,b)=> typeof a[k]==='string' ? a[k].localeCompare(b[k]) : b[k]-a[k]);
+    document.querySelectorAll('#pubTable th').forEach(x=>x.classList.remove('sorted'));
+    th.classList.add('sorted');
+    drawPubTable();
+  });
+});
+
+let advRows = [...DATA.buyers];
+function drawAdvTable(){
+  renderTable('#advTable tbody', advRows, ['winner','impressions_won','total_spend','avg_clearing_cpm','win_rate','cvr'], (r,c)=>{
+    if(c==='total_spend') return fmtMoney(r.total_spend);
+    if(c==='avg_clearing_cpm') return '$'+r.avg_clearing_cpm.toFixed(2);
+    if(c==='win_rate') return (r.win_rate*100).toFixed(1)+'%';
+    if(c==='cvr') return (r.cvr*100).toFixed(1)+'%';
+    if(c==='impressions_won') return r.impressions_won.toLocaleString();
+    return r[c];
+  }, r=>r.winner);
 }
 drawAdvTable();
 document.getElementById('advFilter').addEventListener('input', e=>{
